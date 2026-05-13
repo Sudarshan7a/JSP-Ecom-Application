@@ -37,6 +37,14 @@
                             </thead>
 
                             <tbody>
+                            <c:if test="${empty order or empty order.cartProducts}">
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        Your cart is empty. Browse the shop to add premium merch.
+                                    </td>
+                                </tr>
+                            </c:if>
+
                             <c:forEach items="${order.cartProducts}" var="o">
                                 <tr>
                                     <td class="product-thumbnail">
@@ -107,7 +115,11 @@
                             <input type="text" class="form-control py-3" id="coupon" placeholder="Coupon Code">
                         </div>
                         <div class="col-md-4">
-                            <button class="btn btn-primary btn-sm">Apply Coupon</button>
+                            <button id="apply-coupon-btn" type="button" class="btn btn-primary btn-sm">Apply Coupon</button>
+                        </div>
+                        <div class="col-md-12 mt-2">
+                            <small class="text-muted">Try demo coupon: <strong>RCB25</strong> for 25% off (display only).</small>
+                            <div id="coupon-status" class="mt-2"></div>
                         </div>
                     </div>
                 </div>
@@ -126,7 +138,7 @@
 
                                 <div class="col-md-6 text-right">
                                     <input name="order-price-total" class="form-control-plaintext h5 text-black"
-                                           value="${total_price}" style="text-align: center" readonly>
+                                           value="${empty total_price ? 0 : total_price}" style="text-align: center" readonly>
                                 </div>
                             </div>
 
@@ -148,5 +160,6 @@
 </div>
 
 <jsp:include page="templates/scripts.jsp"/>
+<script src="${pageContext.request.contextPath}/static/js/coupon-handler.js"></script>
 </body>
 </html>

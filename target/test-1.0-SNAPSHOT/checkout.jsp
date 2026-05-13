@@ -32,6 +32,12 @@
                 <div class="col-md-6 mb-5 mb-md-0">
                     <h2 class="h3 mb-3 text-black">Billing Details</h2>
 
+                    <c:if test="${empty order or empty order.cartProducts}">
+                        <div class="alert alert-warning mb-4">
+                            Your cart is empty. Add products before checkout.
+                        </div>
+                    </c:if>
+
                     <div class="p-3 p-lg-5 border">
                         <div class="form-group row">
                             <div class="col-md-6">

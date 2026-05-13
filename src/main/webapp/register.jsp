@@ -9,13 +9,12 @@
 <div class="auth-screen">
     <div class="auth-visual">
         <div class="auth-visual-card">
-            <img src="${pageContext.request.contextPath}/static/images/red-bull-racing-capsule.svg?v=20260506" alt="Red Bull Racing merch capsule">
+            <img src="${pageContext.request.contextPath}/static/images/red-bull-racing-capsule.svg?v=20260506" alt="Premium merch capsule">
             <div class="auth-visual-copy">
                 <div class="auth-kicker">Create account</div>
                 <h1 class="auth-title" style="color:#fff !important;">Unlock merch drops.</h1>
                 <p class="auth-note" style="color:rgba(255,255,255,0.78); max-width: 460px;">
-                    Build your account to save Royal Challengers and Red Bull Racing fan gear, track orders,
-                    and move through checkout faster.
+                    Build your account to save fan gear, track orders, and move through checkout faster.
                 </p>
                 <div class="chip-row">
                     <span class="chip">RCB drops</span>
@@ -32,6 +31,10 @@
                 <div class="auth-kicker" style="color: var(--olive);">Sign up</div>
                 <h2 class="auth-title">Create your merch account</h2>
                 <p class="auth-note">Register once to personalize the storefront, save fan drops, and keep your shopping history in one place.</p>
+
+                <div class="alert alert-info mb-3">
+                    Demo mode creates a local session account when DB credentials are missing.
+                </div>
 
                 <form action="register" method="post" class="auth-form" enctype="multipart/form-data">
                     ${alert}

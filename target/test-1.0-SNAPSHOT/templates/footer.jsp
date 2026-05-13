@@ -2,8 +2,8 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <footer class="site-footer border-top">
     <div class="container">
-        <div class="footer-shell">
-            <div class="footer-brand">
+        <div class="footer-shell row">
+            <div class="footer-brand col-md-3 mb-5 mb-md-0">
                 <div class="footer-brand__mark">JSP Ecom</div>
                 <h3 class="footer-heading mb-4">Fan merch store</h3>
                 <p>
@@ -18,7 +18,7 @@
                 </div>
             </div>
 
-            <div class="footer-links">
+            <div class="footer-links col-md-3 mb-5 mb-md-0">
                 <h3 class="footer-heading mb-4">Shop</h3>
                 <ul class="list-unstyled">
                     <li><a href="${pageContext.request.contextPath}/shop">All merch</a></li>
@@ -28,47 +28,28 @@
                 </ul>
             </div>
 
-            <div class="footer-promo">
-                <a href="${pageContext.request.contextPath}/shop" class="footer-drop-card">
-                    <img src="${pageContext.request.contextPath}/static/images/puma-rcb-jersey.png?v=20260506"
-                         alt="Royal Challengers merchandise">
-                    <div class="footer-drop-card__eyebrow">Royal Challengers</div>
-                    <h4>Match-day merch</h4>
-                    <p>Jerseys, caps, and fan-ready bundles.</p>
-                </a>
-
-                <a href="${pageContext.request.contextPath}/shop" class="footer-drop-card footer-drop-card--dark">
-                    <img src="${pageContext.request.contextPath}/static/images/red-bull-racing-capsule.svg?v=20260506"
-                         alt="Red Bull Racing merchandise">
-                    <div class="footer-drop-card__eyebrow">Red Bull Racing</div>
-                    <h4>Race-week merch</h4>
-                    <p>Premium fan gear with a paddock edge.</p>
-                </a>
+            <div class="footer-contact col-md-3 mb-5 mb-md-0">
+                <h3 class="footer-heading mb-4">Contact Info</h3>
+                <ul class="list-unstyled">
+                    <li class="address">203 Fake St. Mountain View, San Francisco, California, USA</li>
+                    <li class="phone"><a href="tel://23923929210">+2 392 3929 210</a></li>
+                    <li class="email"><a href="mailto:emailaddress@domain.com">emailaddress@domain.com</a></li>
+                </ul>
             </div>
 
-            <div class="footer-contact">
-                <div class="block-5 mb-5">
-                    <h3 class="footer-heading mb-4">Contact Info</h3>
-                    <ul class="list-unstyled">
-                        <li class="address">203 Fake St. Mountain View, San Francisco, California, USA</li>
-                        <li class="phone"><a href="tel://23923929210">+2 392 3929 210</a></li>
-                        <li class="email">emailaddress@domain.com</li>
-                    </ul>
-                </div>
-
-                <div class="block-7">
-                    <form action="#" method="post">
-                        <label for="email_subscribe" class="footer-heading">Subscribe</label>
-                        <div class="form-group">
-                            <input type="text" class="form-control py-4" id="email_subscribe" placeholder="Email">
-                            <input type="submit" class="btn btn-sm btn-primary" value="Send">
-                        </div>
-                    </form>
-                </div>
+            <div class="footer-subscribe col-md-3 mb-5 mb-md-0">
+                <h3 class="footer-heading mb-4">Subscribe</h3>
+                <form action="#" method="post" class="block-7">
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="email_subscribe" placeholder="Your email" required>
+                        <input type="submit" class="btn btn-sm btn-primary" value="Subscribe">
+                    </div>
+                </form>
+                <p style="font-size: 12px; color: #8b8680; margin-top: 10px;">Subscribe to get updates on new drops and exclusive offers.</p>
             </div>
         </div>
 
-        <div class="footer-bottom">
+        <div class="footer-bottom border-top mt-5 pt-4">
             <p>
                 Copyright &copy;<script>document.write(new Date().getFullYear());</script>
                 JSP Ecom. All rights reserved.

@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet(name = "ShopControl", value = "/shop")
@@ -19,6 +20,12 @@ public class ShopControl extends HttpServlet {
     // Call DAO class to access with database.
     ProductDao productDao = new ProductDao();
     CategoryDao categoryDao = new CategoryDao();
+
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -28,14 +35,38 @@ public class ShopControl extends HttpServlet {
             index = "1";
         }
 
-        // Get 12 products from database to display on each page.
-        List<Product> productList = productDao.get12ProductsOfPage(Integer.parseInt(index));
+        List<Product> fallbackProducts = DemoStore.createProducts();
 
-        // Get all categories from database.
-        List<Category> categoryList = categoryDao.getAllCategories();
+        List<Product> productList;
+        if (demoMode()) {
+            int pageIndex = Integer.parseInt(index);
+            int fromIndex = Math.max(0, (pageIndex - 1) * 12);
+            int toIndex = Math.min(fallbackProducts.size(), fromIndex + 12);
+            productList = fromIndex < fallbackProducts.size() ? fallbackProducts.subList(fromIndex, toIndex) : new ArrayList<>();
+        } else {
+            productList = productDao.get12ProductsOfPage(Integer.parseInt(index));
+        }
 
-        // Get total products to count pages.
-        int totalProduct = productDao.getTotalNumberOfProducts();
+        if (productList == null || productList.isEmpty()) {
+            int pageIndex = Integer.parseInt(index);
+            int fromIndex = Math.max(0, (pageIndex - 1) * 12);
+            int toIndex = Math.min(fallbackProducts.size(), fromIndex + 12);
+            if (fromIndex < fallbackProducts.size()) {
+                productList = fallbackProducts.subList(fromIndex, toIndex);
+            } else {
+                productList = new ArrayList<>();
+            }
+        }
+
+        List<Category> categoryList = demoMode() ? DemoStore.createCategories() : categoryDao.getAllCategories();
+        if (categoryList == null || categoryList.isEmpty()) {
+            categoryList = DemoStore.createCategories();
+        }
+
+        int totalProduct = demoMode() ? fallbackProducts.size() : productDao.getTotalNumberOfProducts();
+        if (totalProduct <= 0) {
+            totalProduct = fallbackProducts.size();
+        }
         int totalPages = totalProduct / 12;
         if (totalProduct % 12 != 0) {
             totalPages++;

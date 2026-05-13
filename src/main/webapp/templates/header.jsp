@@ -53,7 +53,7 @@
                                 <a href="${pageContext.request.contextPath}/cart.jsp" class="site-cart">
                                     <span class="icon icon-shopping_cart"></span>
 
-                                    <c:if test="${order.cartProducts.size() != null}">
+                                    <c:if test="${order != null and order.cartProducts != null}">
                                         <span class="count">${order.cartProducts.size()}</span>
                                     </c:if>
                                 </a>

@@ -246,4 +246,27 @@ public class ProductDao {
             System.out.println(e.getMessage());
         }
     }
+
+    // Method to insert product with imageUrl (for initialization).
+    public void insertProduct(Product product) {
+        String query = "INSERT INTO product (product_id, product_name, product_price, product_description, fk_category_id, fk_account_id, product_is_deleted, product_amount, product_image_url) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE product_name=VALUES(product_name), product_price=VALUES(product_price)";
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            connection = new Database().getConnection();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setInt(1, product.getId());
+            preparedStatement.setString(2, product.getName());
+            preparedStatement.setDouble(3, product.getPrice());
+            preparedStatement.setString(4, product.getDescription());
+            preparedStatement.setInt(5, product.getCategory() != null ? product.getCategory().getId() : 1);
+            preparedStatement.setInt(6, product.getAccount() != null ? product.getAccount().getId() : 1);
+            preparedStatement.setBoolean(7, product.getIsDeleted());
+            preparedStatement.setInt(8, product.getAmount());
+            preparedStatement.setString(9, product.getImageUrl());
+            preparedStatement.executeUpdate();
+        } catch (ClassNotFoundException | SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
 }

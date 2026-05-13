@@ -20,8 +20,15 @@ public class OrderHistoryControl extends HttpServlet {
         // Get account from session.
         HttpSession session = request.getSession();
         Account account = (Account) session.getAttribute("account");
+        if (account == null) {
+            account = DemoStore.createDemoAccount();
+            session.setAttribute("account", account);
+        }
         // Get order history of account from database.
         List<Order> orderList = orderDao.getOrderHistory(account.getId());
+        if (orderList == null || orderList.isEmpty()) {
+            orderList = DemoStore.createOrders();
+        }
 
         request.setAttribute("order_list", orderList);
         // Set attribute active for order management tab.

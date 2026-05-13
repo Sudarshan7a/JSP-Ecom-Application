@@ -16,4 +16,5 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/magnific-popup.css?v=20260506">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/jquery-ui.css?v=20260506">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/ui.css?v=20260506">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/luxury.css?v=20260506">
 </head>

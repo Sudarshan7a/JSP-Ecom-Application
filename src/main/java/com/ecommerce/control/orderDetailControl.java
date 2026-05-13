@@ -20,6 +20,9 @@ public class orderDetailControl extends HttpServlet {
         int orderId = Integer.parseInt(request.getParameter("order-id"));
         // Get order by id from database.
         List<CartProduct> list = orderDao.getOrderDetailHistory(orderId);
+        if (list == null || list.isEmpty()) {
+            list = DemoStore.createOrderDetail(orderId);
+        }
 
         request.setAttribute("order_detail_list", list);
         // Get request dispatcher and render to order-detail page.

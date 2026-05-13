@@ -13,10 +13,27 @@ public class LoginControl extends HttpServlet {
     // Call DAO class to access with database.
     AccountDao accountDao = new AccountDao();
 
-    private Account getAccountCookie(HttpServletRequest request) {
-        // Get list cookies of the browser.
-        Cookie[] cookies = request.getCookies();
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
 
+    private Account createDemoAccountFromRequest(HttpServletRequest request) {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        if (!"demo".equalsIgnoreCase(username) || !"demo123".equals(password)) {
+            return null;
+        }
+        return DemoStore.createDemoAccount();
+    }
+
+    private Account getAccountCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null || cookies.length == 0) {
+            return null;
+        }
+        // Get list cookies of the browser.
         Account account;
         String username = "";
         String password = "";
@@ -60,8 +77,7 @@ public class LoginControl extends HttpServlet {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
 
-        // Check account in database.
-        Account account = accountDao.checkLoginAccount(username, password);
+        Account account = demoMode() ? createDemoAccountFromRequest(request) : accountDao.checkLoginAccount(username, password);
         if (account == null && status.equals("typed")) {
             // An alert to send to login page.
             String alert = "<div class=\"alert alert-danger wrap-input100\">\n" +
@@ -84,6 +100,14 @@ public class LoginControl extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (demoMode()) {
+            Account demoAccount = createDemoAccountFromRequest(request);
+            if (demoAccount != null) {
+                executeLogin(request, response, demoAccount);
+                return;
+            }
+        }
+
         // Check the cookies of account.
         Account account = getAccountCookie(request);
         if (account == null) {

@@ -20,12 +20,23 @@ public class HomeControl extends HttpServlet {
     ProductDao productDao = new ProductDao();
     CategoryDao categoryDao = new CategoryDao();
 
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
+
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        // Get all products from database.
-        List<Product> productList = productDao.getAllProducts();
-        // Get all categories from database.
-        List<Category> categoryList = categoryDao.getAllCategories();
+        List<Product> productList = demoMode() ? DemoStore.createProducts() : productDao.getAllProducts();
+        if (productList == null || productList.isEmpty()) {
+            productList = DemoStore.createProducts();
+        }
+
+        List<Category> categoryList = demoMode() ? DemoStore.createCategories() : categoryDao.getAllCategories();
+        if (categoryList == null || categoryList.isEmpty()) {
+            categoryList = DemoStore.createCategories();
+        }
 
 
         request.setAttribute("product_list", productList);

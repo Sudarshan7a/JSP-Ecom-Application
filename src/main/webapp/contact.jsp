@@ -27,8 +27,13 @@
                 </div>
 
                 <div class="col-md-7">
-                    <form action="#" method="post">
+                    <form action="${pageContext.request.contextPath}/contact" method="post">
                         <div class="p-3 p-lg-5 border">
+                            <c:if test="${sessionScope.contact_message_sent}">
+                                <div class="alert alert-success mb-4">
+                                    Thanks ${sessionScope.contact_message_name}, your message has been captured locally.
+                                </div>
+                            </c:if>
                             <div class="form-group row">
                                 <div class="col-md-6">
                                     <label for="c_fname" class="text-black">First Name <span

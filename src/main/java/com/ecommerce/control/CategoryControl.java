@@ -17,15 +17,25 @@ public class CategoryControl extends HttpServlet {
     ProductDao productDao = new ProductDao();
     CategoryDao categoryDao = new CategoryDao();
 
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Get the id of the selected category.
         int category_id = Integer.parseInt(request.getParameter("category_id"));
 
-        // Get all products with the given category_id.
-        List<Product> productList = productDao.getAllCategoryProducts(category_id);
-        // Get all categories from database.
-        List<Category> categoryList = categoryDao.getAllCategories();
+        List<Product> productList = demoMode() ? DemoStore.productsForCategory(category_id) : productDao.getAllCategoryProducts(category_id);
+        if (productList == null || productList.isEmpty()) {
+            productList = DemoStore.productsForCategory(category_id);
+        }
+        List<Category> categoryList = demoMode() ? DemoStore.createCategories() : categoryDao.getAllCategories();
+        if (categoryList == null || categoryList.isEmpty()) {
+            categoryList = DemoStore.createCategories();
+        }
 
         request.setAttribute("product_list", productList);
         request.setAttribute("category_list", categoryList);

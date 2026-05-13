@@ -26,6 +26,14 @@ public class ProductDetail extends HttpServlet {
 
         // Get product from database with the given id.
         Product product = productDao.getProduct(id);
+        if (product == null || product.getName() == null || product.getName().trim().isEmpty()) {
+            product = DemoStore.findProduct(id);
+        }
+
+        if (product == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
 
         // Check number product available.
         String disabled = "";
@@ -35,6 +43,9 @@ public class ProductDetail extends HttpServlet {
 
         // Get all products for feature section.
         List<Product> productList = productDao.getAllProducts();
+        if (productList == null || productList.isEmpty()) {
+            productList = DemoStore.createProducts();
+        }
 
         // Set attribute active class for home in header.
         String active = "active";

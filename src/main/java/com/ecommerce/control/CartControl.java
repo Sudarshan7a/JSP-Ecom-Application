@@ -1,6 +1,7 @@
 package com.ecommerce.control;
 
 import com.ecommerce.dao.ProductDao;
+import com.ecommerce.control.DemoStore;
 import com.ecommerce.entity.CartProduct;
 import com.ecommerce.entity.Order;
 import com.ecommerce.entity.Product;
@@ -49,9 +50,15 @@ public class CartControl extends HttpServlet {
         // Check if request is remove product from cart or not.
         if (request.getParameter("remove-product-id") != null) {
             Order order = (Order) session.getAttribute("order");
-            double totalPrice = (double) session.getAttribute("total_price");
+            if (order == null) {
+                response.sendRedirect("cart.jsp");
+                return;
+            }
+            double totalPrice = session.getAttribute("total_price") == null ? 0 : (double) session.getAttribute("total_price");
             int productId = Integer.parseInt(request.getParameter("remove-product-id"));
             removeCartProduct(productId, order, totalPrice);
+            session.setAttribute("order", order);
+            session.setAttribute("total_price", totalPrice);
             response.sendRedirect("cart.jsp");
             return;
         }
@@ -74,6 +81,9 @@ public class CartControl extends HttpServlet {
 
             // Get product information from database.
             Product product = productDao.getProduct(productId);
+            if (product == null || product.getName() == null || product.getName().trim().isEmpty()) {
+                product = DemoStore.findProduct(productId);
+            }
             if (product != null) {
                 // Get the quantity of the adding product.
                 if (request.getParameter("quantity") != null) {

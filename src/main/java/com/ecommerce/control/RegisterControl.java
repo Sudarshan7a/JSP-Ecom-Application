@@ -1,6 +1,7 @@
 package com.ecommerce.control;
 
 import com.ecommerce.dao.AccountDao;
+import com.ecommerce.entity.Account;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -17,6 +18,12 @@ import java.io.InputStream;
 public class RegisterControl extends HttpServlet {
     // Call DAO class to access with database.
     AccountDao accountDao = new AccountDao();
+
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -40,7 +47,7 @@ public class RegisterControl extends HttpServlet {
             request.getRequestDispatcher("register.jsp").forward(request, response);
         }
         // Check username is existed or not from database.
-        else if (accountDao.checkUsernameExists(username)) {
+        else if (!demoMode() && accountDao.checkUsernameExists(username)) {
             String alert = "<div class=\"alert alert-danger wrap-input100\">\n" +
                     "                        <p style=\"font-family: Ubuntu-Bold; font-size: 18px; margin: 0.25em 0; text-align: center\">\n" +
                     "                            Username already exist!\n" +
@@ -51,6 +58,15 @@ public class RegisterControl extends HttpServlet {
         }
         // Insert username, password to database and create account.
         else {
+            if (demoMode()) {
+                Account account = DemoStore.createDemoAccount();
+                account.setUsername(username);
+                account.setPassword(password);
+                request.getSession().setAttribute("account", account);
+                request.setAttribute("alert", "<div class=\"alert alert-success wrap-input100\">\n                        <p style=\"font-family: Ubuntu-Bold; font-size: 18px; margin: 0.25em 0; text-align: center\">\n                            Demo account created successfully!\n                        </p>\n                    </div>");
+                request.getRequestDispatcher("login.jsp").forward(request, response);
+                return;
+            }
             accountDao.createAccount(username, password, inputStream);
             String alert = "<div class=\"alert alert-success wrap-input100\">\n" +
                     "                        <p style=\"font-family: Ubuntu-Bold; font-size: 18px; margin: 0.25em 0; text-align: center\">\n" +

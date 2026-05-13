@@ -343,82 +343,113 @@ h1, h2, h3, h4, h5, h6,
 
 /* ---------- Footer ---------- */
 .site-footer {
-  background: #141210 !important;
+  background: #0e0d0b !important;
   border-top: 2px solid var(--accent) !important;
-  color: #b7b2ab !important;
+  color: #c5bfb7 !important;
   padding: 60px 0 30px !important;
 }
 .site-footer .footer-heading {
   color: #fff !important;
-  font-weight: 600 !important;
-  font-size: 18px !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   margin-bottom: 20px !important;
 }
 .site-footer ul li a {
-  color: #d4cfc8 !important;
+  color: #c5bfb7 !important;
   transition: var(--transition);
   line-height: 1.8;
+  font-size: 14px;
 }
 .site-footer ul li a:hover {
   color: var(--accent) !important;
   padding-left: 4px;
 }
+/* Contact Info block-5 – text must be visible on dark bg */
+.site-footer .footer-contact ul li,
 .site-footer .block-5 ul li {
-  color: #d4cfc8 !important;
+  color: #c5bfb7 !important;
   margin-bottom: 12px !important;
   line-height: 1.6;
+  font-size: 14px;
+  padding-left: 30px;
+  position: relative;
 }
+.site-footer .footer-contact ul li.address,
+.site-footer .footer-contact ul li.phone,
+.site-footer .footer-contact ul li.email,
 .site-footer .block-5 ul li.address,
 .site-footer .block-5 ul li.phone,
 .site-footer .block-5 ul li.email {
-  color: #d4cfc8 !important;
+  color: #c5bfb7 !important;
 }
 .site-footer .block-5 ul li:before {
   color: var(--accent) !important;
 }
 .site-footer .border-top {
-  border-color: rgba(255,255,255,0.08) !important;
+  border-color: rgba(255,255,255,0.10) !important;
 }
 .site-footer p,
 .site-footer p a {
-  color: #8b8680 !important;
+  color: #8d8680 !important;
 }
 .site-footer p a:hover {
   color: var(--accent) !important;
 }
 
-/* Footer Subscribe Form */
+/* Footer Subscribe Form – flex layout so email+button don't overlap */
 .site-footer .block-7 {
-  margin-top: 30px !important;
+  margin-top: 0 !important;
 }
 .site-footer .block-7 .form-group {
   display: flex !important;
-  gap: 10px !important;
+  flex-wrap: wrap;
+  gap: 8px !important;
+  position: relative !important; /* override absolute btn from style.css */
+  align-items: stretch;
 }
-.site-footer .block-7 input[type="text"] {
-  flex: 1 !important;
-  background: rgba(255,255,255,0.1) !important;
-  border: 1px solid rgba(255,255,255,0.2) !important;
+.site-footer .block-7 input[type="text"],
+.site-footer .block-7 input[type="email"] {
+  flex: 1 1 160px !important;
+  min-width: 0 !important;
+  background: rgba(255,255,255,0.08) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  border-radius: 10px !important;
   color: #fff !important;
-  padding: 12px 16px !important;
+  padding: 11px 16px !important;
+  /* Override position:absolute btn from style.css */
+  padding-right: 16px !important;
 }
-.site-footer .block-7 input[type="text"]::placeholder {
-  color: rgba(255,255,255,0.6) !important;
+.site-footer .block-7 input[type="text"]::placeholder,
+.site-footer .block-7 input[type="email"]::placeholder {
+  color: rgba(255,255,255,0.5) !important;
 }
-.site-footer .block-7 input[type="text"]:focus {
-  background: rgba(255,255,255,0.15) !important;
+.site-footer .block-7 input[type="text"]:focus,
+.site-footer .block-7 input[type="email"]:focus {
+  background: rgba(255,255,255,0.12) !important;
   border-color: var(--accent) !important;
   color: #fff !important;
 }
 .site-footer .block-7 input[type="submit"] {
+  /* Override absolute positioning from style.css */
+  position: static !important;
+  transform: none !important;
+  width: auto !important;
+  flex-shrink: 0;
   background: var(--accent) !important;
   border: none !important;
+  border-radius: 10px !important;
   color: #1b1a17 !important;
-  font-weight: 600 !important;
-  padding: 12px 24px !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.08em;
+  padding: 11px 20px !important;
+  cursor: pointer;
+  transition: var(--transition);
 }
 .site-footer .block-7 input[type="submit"]:hover {
-  background: var(--accent-dark) !important;
+  background: var(--accent-dark, #b08040) !important;
 }
 
 /* ---------- Cards & Tables ---------- */
@@ -487,30 +518,27 @@ h1, h2, h3, h4, h5, h6,
   background: var(--primary);
 }
 
-/* ---------- Search Bar ---------- */
+/* ---------- Search Bar ----------
+   NOTE: do NOT override with flex here – ui.css uses position:absolute icon.
+   We only adjust input appearance. ---------------------------------------- */
 .site-block-top-search {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  width: 100%;
+  max-width: 280px;
 }
-.site-block-top-search .icon {
-  color: var(--text-secondary);
-  font-size: 18px;
-  flex-shrink: 0;
-}
+/* icon stays absolute (set by ui.css) – just make sure input has padding */
 .site-block-top-search input {
-  border-radius: var(--radius-sm) !important;
-  background: #fff9f2 !important;
-  border: 1px solid transparent !important;
+  background: rgba(255,255,255,0.86) !important;
+  border: 1px solid rgba(23,20,17,0.08) !important;
   transition: var(--transition);
-  padding-left: 12px !important;
-  flex: 1;
+  padding-left: 42px !important;
+  padding-right: 16px !important;
+  width: 100%;
 }
 .site-block-top-search input:focus {
   background: #fff !important;
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(199,163,107,0.14) !important;
+  border-color: rgba(32,63,53,0.35) !important;
+  box-shadow: 0 0 0 3px rgba(32,63,53,0.08) !important;
   outline: none;
 }
 
@@ -533,24 +561,41 @@ img[alt="Image"] {
 .col-sm-6.col-lg-4.mb-4:nth-child(2) { animation-delay: 0.1s; }
 .col-sm-6.col-lg-4.mb-4:nth-child(3) { animation-delay: 0.15s; }
 
-/* ---------- Register Page - Auth Screen Improvements ---------- */
+/* ---------- Register / Login Page - Auth Screen Fixes ----------
+   The poster visual must fill the left panel properly.           */
+.auth-visual {
+  padding: clamp(20px, 4vw, 48px);
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
 .auth-visual-card {
-  min-height: auto !important;
-  max-height: 80vh;
-  aspect-ratio: 9/10;
+  width: 100%;
+  min-height: 0 !important;
+  max-height: none !important;
+  flex: 1;
+  /* Remove aspect-ratio so it fills the panel height */
+  aspect-ratio: unset !important;
+  display: flex;
+  flex-direction: column;
 }
 
 .auth-visual-card img {
-  object-fit: cover;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  position: absolute;
+  inset: 0;
 }
 
 .auth-visual-copy {
   position: absolute;
-  inset: auto 28px 28px 28px !important;
+  inset: auto 32px 32px 32px !important;
   color: #fff;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .auth-visual-copy .auth-kicker {
@@ -558,14 +603,16 @@ img[alt="Image"] {
 }
 
 .auth-visual-copy h1 {
-  margin-bottom: 8px !important;
-  font-size: clamp(32px, 4vw, 48px);
-  line-height: 1.2;
+  margin-bottom: 6px !important;
+  font-size: clamp(28px, 3.5vw, 46px);
+  line-height: 1.1;
+  color: #fff !important;
 }
 
 .auth-visual-copy p {
   line-height: 1.6;
-  font-size: 15px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.82) !important;
 }
 
 .chip-row {
