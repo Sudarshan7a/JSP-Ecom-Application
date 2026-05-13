@@ -24,14 +24,14 @@
                         <ul>
                             <c:if test="${sessionScope.account != null}">
                                 <li class="dropdown">
-                                    <c:if test="${account.base64Image != null}">
+                                    <c:if test="${not empty account.base64Image}">
                                         <img class="icon dropdown-toggle" src="data:image/jpg;base64,${account.base64Image}"
                                              id="dropdownMenuReference"
                                              data-toggle="dropdown" alt="image"
                                              style="width: 1.5em; border-radius: 50%; margin-right: 10px; margin-bottom: 10px; cursor: pointer;">
                                     </c:if>
 
-                                    <c:if test="${account.base64Image == null}">
+                                    <c:if test="${empty account.base64Image}">
                                         <img class="icon dropdown-toggle" src="${pageContext.request.contextPath}/static/images/blank_avatar.png?v=20260506"
                                              id="dropdownMenuReference"
                                              data-toggle="dropdown" alt="image"

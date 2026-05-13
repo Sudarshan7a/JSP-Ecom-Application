@@ -852,9 +852,6 @@ img[alt="Image"] {
   justify-content: center;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, var(--accent) 0%, rgba(199,163,107,0.7) 100%);
-  border-radius: 12px;
-  color: white;
   font-size: 32px;
 }
 
