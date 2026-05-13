@@ -719,6 +719,140 @@ img[alt="Image"] {
     height: 200px;
   }
 }
+
+/* ---------- Home Page - Image Sections and Collections ---------- */
+.image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.block-2-item {
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.block-2-item:hover .image img {
+  transform: scale(1.06);
+}
+
+.block-2-item .text {
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(31,77,58,0.12) 100%);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  color: white;
+}
+
+.block-2-item .text h3 {
+  margin: 12px 0 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.block-2-item .text span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.8);
+  display: block;
+}
+
+/* Hero image optimization */
+.hero-panel img,
+.hero-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+}
+
+/* Featured products carousel */
+.block-4-image {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f6f1ea 0%, #efe5d8 100%);
+  min-height: 250px;
+}
+
+.block-4-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.block-4-image:hover img {
+  transform: scale(1.08);
+}
+
+/* Icon sections styling */
+.site-section-sm .icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, var(--accent) 0%, rgba(199,163,107,0.7) 100%);
+  border-radius: 12px;
+  color: white;
+  font-size: 32px;
+}
+
+/* Merch card images */
+.merch-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.merch-card:hover .merch-card__media img {
+  transform: scale(1.08);
+}
+
+/* Image loading states */
+img[loading="lazy"],
+img:not([src]) {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Responsive image adjustments */
+@media (max-width: 768px) {
+  .block-2-item .text {
+    padding: 16px;
+  }
+  
+  .block-2-item .text h3 {
+    font-size: 18px;
+  }
+  
+  .block-4-image {
+    min-height: 200px;
+  }
+  
+  .site-section-sm .icon {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+}
 .col-sm-6.col-lg-4.mb-4:nth-child(4) { animation-delay: 0.2s; }
 .col-sm-6.col-lg-4.mb-4:nth-child(5) { animation-delay: 0.25s; }
 .col-sm-6.col-lg-4.mb-4:nth-child(6) { animation-delay: 0.3s; }
