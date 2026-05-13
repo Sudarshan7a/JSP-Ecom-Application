@@ -549,13 +549,16 @@ cd JSP-Ecom-Application
    ```
    Expected output should show tables: `account`, `category`, `order`, `order_detail`, `product`
 
-4. **Update database credentials (if different):**
-   - Edit: `src/main/java/com/ecommerce/database/Database.java`
-   - Update these lines:
-     ```java
-     String url = "jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website";
-     String user = "root";        // your MySQL username
-     String password = "root";    // your MySQL password
+4. **Configure database credentials:**
+   - Set environment variables before starting Tomcat:
+     ```powershell
+     $env:ECOM_DB_URL="jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website"
+     $env:ECOM_DB_USER="root"
+     $env:ECOM_DB_PASSWORD="root"
+     ```
+   - Or pass JVM properties:
+     ```powershell
+     -Decom.db.url=jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website -Decom.db.user=root -Decom.db.password=root
      ```
 
 ### Step 3: Build the Project
@@ -668,10 +671,10 @@ If not found, rebuild: `mvn clean package`
 
 ## 📊 Database Information
 
-### Default Credentials
-- **MySQL User:** `root`
-- **MySQL Password:** `root`
+### Runtime DB Configuration
 - **Database:** `jsp-servlet-ecommerce-website`
+- **Credentials source:** `ECOM_DB_USER` / `ECOM_DB_PASSWORD` environment variables  
+  (or `ecom.db.user` / `ecom.db.password` JVM properties)
 
 ### Sample Data
 The `Dump20210903.sql` includes:
@@ -738,9 +741,9 @@ Get-Content "$TOMCAT_HOME\logs\catalina.out" -Tail 50
 ### JDBC Configuration
 **File:** `src/main/java/com/ecommerce/database/Database.java`
 ```java
-String url = "jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website";
-String user = "root";
-String password = "root";
+String url = System.getenv("ECOM_DB_URL");
+String user = System.getenv("ECOM_DB_USER");
+String password = System.getenv("ECOM_DB_PASSWORD");
 ```
 
 ### Servlet Mappings

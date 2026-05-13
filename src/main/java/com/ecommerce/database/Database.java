@@ -6,18 +6,24 @@ import java.sql.SQLException;
 
 public class Database {
     private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website";
-    private static final String DEFAULT_USER = "root";
-    private static final String DEFAULT_PASSWORD = "root";
 
-    private String getEnvOrDefault(String key, String defaultValue) {
-        String value = System.getenv(key);
+    private String getEnvOrProperty(String envKey, String propertyKey, String defaultValue) {
+        String value = System.getenv(envKey);
+        if (value == null || value.isBlank()) {
+            value = System.getProperty(propertyKey);
+        }
         return (value == null || value.isBlank()) ? defaultValue : value;
     }
 
     public Connection getConnection() throws SQLException {
-        String url = getEnvOrDefault("ECOM_DB_URL", DEFAULT_URL);
-        String user = getEnvOrDefault("ECOM_DB_USER", DEFAULT_USER);
-        String password = getEnvOrDefault("ECOM_DB_PASSWORD", DEFAULT_PASSWORD);
+        String url = getEnvOrProperty("ECOM_DB_URL", "ecom.db.url", DEFAULT_URL);
+        String user = getEnvOrProperty("ECOM_DB_USER", "ecom.db.user", null);
+        String password = getEnvOrProperty("ECOM_DB_PASSWORD", "ecom.db.password", null);
+
+        if (user == null || password == null) {
+            throw new SQLException("Missing DB credentials. Set ECOM_DB_USER/ECOM_DB_PASSWORD env vars or ecom.db.user/ecom.db.password JVM properties.");
+        }
+
         return DriverManager.getConnection(url, user, password);
     }
 
