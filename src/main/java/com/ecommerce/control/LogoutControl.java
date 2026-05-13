@@ -1,31 +1,33 @@
 package com.ecommerce.control;
 
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
+import javax.servlet.*;
 import javax.servlet.http.*;
+import javax.servlet.annotation.*;
 import java.io.IOException;
 
 @WebServlet(name = "LogoutControl", value = "/logout")
 public class LogoutControl extends HttpServlet {
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Remove session.
-        HttpSession session = request.getSession();
-        session.removeAttribute("account");
-
-        // Remove cookies.
+        // Expire all cookies (including remember-me)
         Cookie[] cookies = request.getCookies();
-        for (Cookie cookie : cookies) {
-            if (cookie.getName().equals("username")) {
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                cookie.setValue("");
                 cookie.setMaxAge(0);
-                response.addCookie(cookie);
-            }
-            if (cookie.getName().equals("password")) {
-                cookie.setMaxAge(0);
+                cookie.setPath("/");
                 response.addCookie(cookie);
             }
         }
 
-        response.sendRedirect("/");
+        // Fully invalidate the session so all attributes are cleared server-side
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+
+        // Redirect to home page
+        response.sendRedirect(request.getContextPath() + "/");
     }
 }
