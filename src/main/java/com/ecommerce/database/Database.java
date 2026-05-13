@@ -2,20 +2,45 @@ package com.ecommerce.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class Database {
-    public Connection getConnection() {
-        Connection conn;
-        try {
-            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website", "root", "root");
-            return conn;
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            return null;
+    private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website";
+
+    private String getEnvOrProperty(String envKey, String propertyKey, String defaultValue) {
+        String value = System.getenv(envKey);
+        if (value == null || value.isBlank()) {
+            value = System.getProperty(propertyKey);
         }
+        if (value != null) {
+            value = value.trim();
+        }
+        return (value == null || value.isBlank()) ? defaultValue : value;
+    }
+
+    public Connection getConnection() throws SQLException {
+        String url = getEnvOrProperty("ECOM_DB_URL", "ecom.db.url", DEFAULT_URL);
+        String user = getEnvOrProperty("ECOM_DB_USER", "ecom.db.user", null);
+        String password = getEnvOrProperty("ECOM_DB_PASSWORD", "ecom.db.password", null);
+
+        if (user == null && password == null) {
+            throw new SQLException("Missing DB user and password. Set ECOM_DB_USER/ECOM_DB_PASSWORD env vars or ecom.db.user/ecom.db.password JVM properties.");
+        }
+        if (user == null) {
+            throw new SQLException("Missing DB user. Set ECOM_DB_USER env var or ecom.db.user JVM property.");
+        }
+        if (password == null) {
+            throw new SQLException("Missing DB password. Set ECOM_DB_PASSWORD env var or ecom.db.password JVM property.");
+        }
+
+        return DriverManager.getConnection(url, user, password);
     }
 
     public static void main(String[] args) {
-        System.out.println(new Database().getConnection());
+        try {
+            System.out.println(new Database().getConnection());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
     }
 }
