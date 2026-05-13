@@ -41,7 +41,7 @@
                                         <tr>
                                             <th>Order #</th>
                                             <th>Date</th>
-                                            <th>Total (₹)</th>
+                                            <th>Total (&#8377;)</th>
                                             <th>Status</th>
                                             <th>Action</th>
                                         </tr>
@@ -54,7 +54,7 @@
                                                     <fmt:formatDate value="${o.date}" pattern="dd MMM yyyy"/>
                                                 </td>
                                                 <td class="font-weight-bold" style="color: var(--primary, #1f4d3a);">
-                                                    &#8377;<fmt:formatNumber value="${o.totalPrice}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
+                                                    &#8377;<fmt:formatNumber value="${o.total}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
                                                 </td>
                                                 <td>
                                                     <span style="display:inline-block; padding: 4px 12px; background: #e8f5e9; color: #2e7d32; border-radius: 20px; font-size: 12px; font-weight: 600;">
