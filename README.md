@@ -556,6 +556,11 @@ cd JSP-Ecom-Application
      $env:ECOM_DB_USER="root"
      $env:ECOM_DB_PASSWORD="root"
      ```
+     ```bash
+     export ECOM_DB_URL="jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website"
+     export ECOM_DB_USER="root"
+     export ECOM_DB_PASSWORD="root"
+     ```
    - Or pass JVM properties:
      ```powershell
      -Decom.db.url=jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website -Decom.db.user=root -Decom.db.password=root

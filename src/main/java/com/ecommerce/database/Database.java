@@ -12,6 +12,9 @@ public class Database {
         if (value == null || value.isBlank()) {
             value = System.getProperty(propertyKey);
         }
+        if (value != null) {
+            value = value.trim();
+        }
         return (value == null || value.isBlank()) ? defaultValue : value;
     }
 
@@ -20,8 +23,14 @@ public class Database {
         String user = getEnvOrProperty("ECOM_DB_USER", "ecom.db.user", null);
         String password = getEnvOrProperty("ECOM_DB_PASSWORD", "ecom.db.password", null);
 
-        if (user == null || password == null) {
-            throw new SQLException("Missing DB credentials. Set ECOM_DB_USER/ECOM_DB_PASSWORD env vars or ecom.db.user/ecom.db.password JVM properties.");
+        if (user == null && password == null) {
+            throw new SQLException("Missing DB user and password. Set ECOM_DB_USER/ECOM_DB_PASSWORD env vars or ecom.db.user/ecom.db.password JVM properties.");
+        }
+        if (user == null) {
+            throw new SQLException("Missing DB user. Set ECOM_DB_USER env var or ecom.db.user JVM property.");
+        }
+        if (password == null) {
+            throw new SQLException("Missing DB password. Set ECOM_DB_PASSWORD env var or ecom.db.password JVM property.");
         }
 
         return DriverManager.getConnection(url, user, password);
