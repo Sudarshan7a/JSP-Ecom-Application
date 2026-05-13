@@ -69,10 +69,10 @@ public class OrderDao {
 
     // Method to insert order information to database.
     public void createOrder(int accountId, double totalPrice, List<CartProduct> cartProducts) {
-        connection = new Database().getConnection();
         String query = "INSERT INTO `order` (fk_account_id, order_total) VALUES (?, ?);";
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
+            connection = new Database().getConnection();
             preparedStatement = connection.prepareStatement(query);
             preparedStatement.setInt(1, accountId);
             preparedStatement.setDouble(2, totalPrice);

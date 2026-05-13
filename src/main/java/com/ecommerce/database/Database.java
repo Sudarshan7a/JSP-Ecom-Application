@@ -2,20 +2,18 @@ package com.ecommerce.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class Database {
-    public Connection getConnection() {
-        Connection conn;
-        try {
-            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website", "root", "root");
-            return conn;
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-            return null;
-        }
+    public Connection getConnection() throws SQLException {
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website", "root", "root");
     }
 
     public static void main(String[] args) {
-        System.out.println(new Database().getConnection());
+        try {
+            System.out.println(new Database().getConnection());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
     }
 }
