@@ -45,7 +45,21 @@ public class CheckoutControl extends HttpServlet {
             }
         }
         if (session.getAttribute("account") != null) {
-            double totalPrice = (double) session.getAttribute("total_price");
+            // Prefer the discounted total submitted from the cart form; fall back to session total
+            double sessionTotal = session.getAttribute("total_price") != null
+                    ? (double) session.getAttribute("total_price") : 0.0;
+
+            String discountedParam = request.getParameter("discounted-total");
+            double finalTotal = sessionTotal;
+            if (discountedParam != null && !discountedParam.isBlank()) {
+                try {
+                    double submitted = Double.parseDouble(discountedParam);
+                    if (submitted >= 0 && submitted <= sessionTotal) {
+                        finalTotal = submitted;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
             Order order = (Order) session.getAttribute("order");
             Account account = (Account) session.getAttribute("account");
 
@@ -58,8 +72,16 @@ public class CheckoutControl extends HttpServlet {
             } else {
                 int accountId = account.getId();
                 accountDao.updateProfileInformation(accountId, firstName, lastName, address, email, phone);
-                orderDao.createOrder(account.getId(), totalPrice, order.getCartProducts());
+                orderDao.createOrder(account.getId(), finalTotal, order != null ? order.getCartProducts() : new java.util.ArrayList<>());
             }
+
+            // Save details for thank-you page display BEFORE clearing session
+            if (order != null) {
+                session.setAttribute("placed_order_items", order.getCartProducts());
+            }
+            session.setAttribute("placed_order_total", finalTotal);
+            session.setAttribute("placed_order_name", (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : ""));
+
             session.removeAttribute("order");
             session.removeAttribute("total_price");
 

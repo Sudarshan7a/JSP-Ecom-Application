@@ -125,28 +125,59 @@
                 </div>
                 <div class="col-md-6 pl-5">
                     <div class="row justify-content-end">
-                        <div class="col-md-7">
+                        <div class="col-md-8">
                             <div class="row">
-                                <div class="col-md-12 text-right border-bottom mb-5">
+                                <div class="col-md-12 text-right border-bottom mb-4">
                                     <h3 class="text-black h4 text-uppercase">Cart Totals</h3>
                                 </div>
                             </div>
-                            <div class="row mb-5">
-                                <div class="col-md-6">
-                                    <span class="text-black" style="font-size: 1.5em">Total</span>
-                                </div>
 
-                                <div class="col-md-6 text-right">
-                                    <input name="order-price-total" class="form-control-plaintext h5 text-black"
-                                           value="${empty total_price ? 0 : total_price}" style="text-align: center" readonly>
+                            <!-- Subtotal row -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <span class="text-muted">Subtotal</span>
+                                </div>
+                                <div class="col-6 text-right">
+                                    <span id="cart-subtotal-display" class="h6 text-black">
+                                        &#8377;${empty total_price ? 0 : total_price}
+                                    </span>
+                                    <input type="hidden" name="order-price-total" id="order-price-total-hidden"
+                                           value="${empty total_price ? 0 : total_price}">
+                                </div>
+                            </div>
+
+                            <!-- Discount row (shown only when coupon applied) -->
+                            <div id="discount-row" class="row mb-3" style="display:none !important;">
+                                <div class="col-6">
+                                    <span class="text-success" id="discount-label">Discount</span>
+                                </div>
+                                <div class="col-6 text-right">
+                                    <span class="text-success h6" id="discount-amount">-&#8377;0</span>
+                                </div>
+                            </div>
+
+                            <!-- Final Total row -->
+                            <div class="row mb-5 border-top pt-3">
+                                <div class="col-6">
+                                    <span class="text-black font-weight-bold" style="font-size: 1.2em">Total</span>
+                                </div>
+                                <div class="col-6 text-right">
+                                    <span id="cart-final-total" class="h5 text-black font-weight-bold">
+                                        &#8377;${empty total_price ? 0 : total_price}
+                                    </span>
+                                    <!-- Hidden field carries the discounted total to checkout -->
+                                    <input type="hidden" name="discounted-total" id="discounted-total"
+                                           value="${empty total_price ? 0 : total_price}">
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-12">
-                                    <a href="checkout.jsp" class="btn btn-primary btn-lg py-3 btn-block">
+                                    <!-- Submit (not anchor) so hidden fields pass through form POST -->
+                                    <button type="submit" class="btn btn-primary btn-lg py-3 btn-block"
+                                            formaction="checkout">
                                         Proceed To Checkout
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         </div>

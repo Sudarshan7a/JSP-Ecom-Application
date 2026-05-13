@@ -36,29 +36,23 @@ jQuery(document).ready(function ($) {
         var originalTotal = getOriginalTotal();
         var discountAmount = (originalTotal * discountPercentage) / 100;
         var finalTotal = originalTotal - discountAmount;
+        var rounded = Math.round(finalTotal * 100) / 100;
+        var discountRounded = Math.round(discountAmount * 100) / 100;
 
-        // Update total display
-        $('input[name="order-price-total"]').val(Math.round(finalTotal * 100) / 100);
+        // Update visible final total display
+        $('#cart-final-total').text('\u20B9' + rounded);
 
-        // Update or add discount row if discount > 0
+        // Update hidden field that gets submitted to checkout
+        $('#discounted-total').val(rounded);
+        $('#order-price-total-hidden').val(rounded);
+
+        // Show/update discount row
         if (discountPercentage > 0) {
-            if ($('#discount-row').length === 0) {
-                // Add discount row before total
-                var discountHtml = '' +
-                    '<div class="row mb-3" id="discount-row">' +
-                    '  <div class="col-md-6">' +
-                    '    <span class="text-success" style="font-size: 1.2em">Discount (' + discountPercentage + '%)</span>' +
-                    '  </div>' +
-                    '  <div class="col-md-6 text-right">' +
-                    '    <span class="text-success h5" id="discount-amount">-₹' + Math.round(discountAmount * 100) / 100 + '</span>' +
-                    '  </div>' +
-                    '</div>';
-                
-                $('#discount-row').length === 0 && 
-                    $('input[name="order-price-total"]').closest('.row').before(discountHtml);
-            } else {
-                $('#discount-amount').text('-₹' + Math.round(discountAmount * 100) / 100);
-            }
+            $('#discount-label').text('Discount (' + discountPercentage + '%)');
+            $('#discount-amount').text('-\u20B9' + discountRounded);
+            $('#discount-row').show();
+        } else {
+            $('#discount-row').hide();
         }
     }
 
@@ -85,24 +79,24 @@ jQuery(document).ready(function ($) {
             // Show success message
             statusDiv.html(
                 '<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                '<strong>✓ Coupon Applied!</strong> ' + coupon.description + ' (Save ₹' + 
-                Math.round((getOriginalTotal() * coupon.percentage) / 100 * 100) / 100 + ')' +
+                '<strong>&#10003; Coupon Applied!</strong> ' + coupon.description + 
+                ' &mdash; You save \u20B9' + Math.round((getOriginalTotal() * coupon.percentage) / 100 * 100) / 100 +
                 '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>' +
                 '</div>'
             );
 
             // Store coupon for checkout
             $('input[name="applied-coupon"]').remove();
-            $('form').append('<input type="hidden" name="applied-coupon" value="' + couponCode + '">');
+            $('form').first().append('<input type="hidden" name="applied-coupon" value="' + couponCode + '">');
             $('input[name="coupon-discount"]').remove();
-            $('form').append('<input type="hidden" name="coupon-discount" value="' + discountPercentage + '">');
+            $('form').first().append('<input type="hidden" name="coupon-discount" value="' + discountPercentage + '">');
 
-            // Update totals
+            // Update totals (visible + hidden fields)
             updateTotals();
             
             // Disable further coupon changes
             $('#coupon').prop('disabled', true);
-            $('#apply-coupon-btn').prop('disabled', true).text('Coupon Applied');
+            $('#apply-coupon-btn').prop('disabled', true).text('Coupon Applied &#10003;');
         } else {
             // Invalid coupon
             statusDiv.html(
