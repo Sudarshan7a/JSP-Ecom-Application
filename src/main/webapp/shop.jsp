@@ -1,6 +1,5 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="com.ecommerce.dao.CategoryDao" %>
 <% response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); %>
 
 <!DOCTYPE html>
@@ -11,106 +10,140 @@
 <div class="site-wrap">
     <jsp:include page="templates/header.jsp"/>
 
-    <div class="bg-light py-3">
+    <div class="breadcrumb">
         <div class="container">
             <div class="row">
-                <div class="col-md-12 mb-0"><a href="${pageContext.request.contextPath}/">Home</a> <span class="mx-2 mb-0">/</span> <strong
-                        class="text-black">Shop</strong></div>
+                <div class="col-md-12">
+                    <a href="${pageContext.request.contextPath}/">Home</a> 
+                    <span class="mx-2">/</span> 
+                    <strong>Shop All Products</strong>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="site-section">
+    <main class="product-section">
         <div class="container">
-
-            <div class="row mb-5">
-                <div class="col-md-9 order-2">
-
-                    <div class="row">
-                        <div class="col-md-12 mb-5">
-                            <div class="float-md-left mb-4"><h2 class="text-black h5">Shop All</h2></div>
-                            <div class="d-flex">
-                                <div class="dropdown mr-1 ml-md-auto">
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-secondary btn-sm dropdown-toggle"
-                                                id="dropdownMenuReference" data-toggle="dropdown">Reference
-                                        </button>
-                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuReference">
-                                            <a class="dropdown-item" href="#">Relevance</a>
-                                            <a class="dropdown-item" href="#">Name, A to Z</a>
-                                            <a class="dropdown-item" href="#">Name, Z to A</a>
-                                            <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item" href="#">Price, low to high</a>
-                                            <a class="dropdown-item" href="#">Price, high to low</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-5">
-                        <c:forEach items="${product_list}" var="o">
-                            <div class="col-sm-6 col-lg-4 mb-4" data-aos="fade-up">
-                                <div class="block-4 text-center border" style="height: 100%">
-                                    <figure class="block-4-image">
-                                        <a href="product-detail?id=${o.id}">
-                                                <img src="${o.imageSource}" alt="Image placeholder"
-                                                    class="img-fluid" style="height: 100%"
-                                                    onerror="this.onerror=null; this.src='static/images/puma-rcb-jersey.png';">
-                                        </a>
-                                    </figure>
-                                    <div class="block-4-text p-4">
-                                        <h3><a href="product-detail?id=${o.id}">${o.name}</a></h3>
-                                        <p class="mb-0">₹${o.price}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </c:forEach>
-                    </div>
-                    <div class="row" data-aos="fade-up">
-                        <div class="col-md-12 text-center">
-                            <div class="site-block-27">
-                                <ul>
-                                    <c:if test="${page_active > 1}">
-                                        <li><a href="shop?index=${page_active - 1}">&lt;</a></li>
-                                    </c:if>
-
-                                    <c:forEach begin="1" end="${total_pages}" var="i">
-                                        <li class="${(page_active == i) ? "active" : " "}"><a
-                                                href="shop?index=${i}">${i}</a></li>
-                                    </c:forEach>
-
-                                    <c:if test="${page_active < total_pages}">
-                                        <li><a href="shop?index=${page_active + 1}">&gt;</a></li>
-                                    </c:if>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+            <div class="row mb-5" style="gap: 2rem;">
+                <!-- Sidebar -->
                 <div class="col-md-3 order-1 mb-5 mb-md-0">
-                    <div class="border p-4 rounded mb-4">
-                        <h3 class="mb-3 h6 text-uppercase text-black d-block">Categories</h3>
-                        <ul class="list-unstyled mb-0">
-                            <c:forEach items="${category_list}" var="o">
-                                <li class="mb-1 active">
-                                    <a href="category?category_id=${o.id}" class="d-flex">
-                                        <span>${o.name}</span>
-                                        <span class="text-black ml-auto">(${o.totalCategoryProduct})</span>
+                    <div class="sidebar">
+                        <h3 class="sidebar-title">Categories</h3>
+                        <ul class="category-list">
+                            <c:forEach items="${category_list}" var="category">
+                                <li>
+                                    <a href="category?category_id=${category.id}">
+                                        <span>${category.name}</span>
+                                        <span class="category-count">${category.totalCategoryProduct}</span>
                                     </a>
                                 </li>
                             </c:forEach>
                         </ul>
                     </div>
                 </div>
+
+                <!-- Main Content -->
+                <div class="col-md-9 order-2">
+                    <div class="section-header">
+                        <h1 class="section-title">Premium RCB Merchandise</h1>
+                        <div class="sort-dropdown">
+                            <select id="sortSelect" onchange="sortProducts()">
+                                <option value="relevance">Sort by Relevance</option>
+                                <option value="name-asc">Name, A to Z</option>
+                                <option value="name-desc">Name, Z to A</option>
+                                <option value="price-asc">Price, Low to High</option>
+                                <option value="price-desc">Price, High to Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Product Grid -->
+                    <div class="product-grid">
+                        <c:forEach items="${product_list}" var="product" varStatus="status">
+                            <div class="product-card" data-aos="fade-up">
+                                <div class="product-image">
+                                    <img src="${product.imageSource}" 
+                                         alt="${product.name}"
+                                         onerror="this.src='static/images/puma-rcb-jersey.png';">
+                                    <span class="badge">Limited</span>
+                                </div>
+                                <div class="product-info">
+                                    <p class="product-category">
+                                        <c:if test="${product.category != null}">
+                                            ${product.category.name}
+                                        </c:if>
+                                        <c:if test="${product.category == null}">
+                                            Premium
+                                        </c:if>
+                                    </p>
+                                    <h3 class="product-name">${product.name}</h3>
+                                    <p class="product-description">${product.description}</p>
+                                    <div class="product-footer">
+                                        <div class="product-price">₹${product.price}</div>
+                                        <a href="product-detail?id=${product.id}" class="product-btn">View</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </c:forEach>
+
+                        <c:if test="${empty product_list}">
+                            <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                                <h3 style="color: #999;">No products available</h3>
+                                <p style="color: #bbb;">Please check back soon for our premium merchandise collection.</p>
+                            </div>
+                        </c:if>
+                    </div>
+
+                    <!-- Pagination -->
+                    <c:if test="${total_pages > 1}">
+                        <div class="pagination">
+                            <c:if test="${page_active > 1}">
+                                <a href="shop?index=${page_active - 1}">← Previous</a>
+                            </c:if>
+
+                            <c:forEach begin="1" end="${total_pages}" var="i">
+                                <c:choose>
+                                    <c:when test="${page_active == i}">
+                                        <span class="active">${i}</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <a href="shop?index=${i}">${i}</a>
+                                    </c:otherwise>
+                                </c:choose>
+                            </c:forEach>
+
+                            <c:if test="${page_active < total_pages}">
+                                <a href="shop?index=${page_active + 1}">Next →</a>
+                            </c:if>
+                        </div>
+                    </c:if>
+                </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <jsp:include page="templates/footer.jsp"/>
 </div>
 
-<jsp:include page="templates/scripts.jsp"/>
+<script>
+function sortProducts() {
+    const sortValue = document.getElementById('sortSelect').value;
+    console.log('Sort by:', sortValue);
+}
+
+// Initialize AOS animation library if available
+if (typeof AOS !== 'undefined') {
+    AOS.init({
+        duration: 1000,
+        once: true
+    });
+}
+</script>
+
+<script src="${pageContext.request.contextPath}/static/js/jquery-3.3.1.min.js"></script>
+<script src="${pageContext.request.contextPath}/static/js/bootstrap.min.js"></script>
+<script src="${pageContext.request.contextPath}/static/js/aos.js"></script>
+<script src="${pageContext.request.contextPath}/static/js/category-filter.js"></script>
+
 </body>
 </html>
