@@ -34,14 +34,12 @@
                             <li class="${empty param.category_id and empty param.keyword ? 'active-category' : ''}">
                                 <a href="${pageContext.request.contextPath}/shop">
                                     <span>All Products</span>
-                                    <span class="category-count">${fn:length(product_list)}</span>
                                 </a>
                             </li>
                             <c:forEach items="${category_list}" var="category">
                                 <li class="${param.category_id == category.id ? 'active-category' : ''}">
                                     <a href="category?category_id=${category.id}">
                                         <span>${category.name}</span>
-                                        <span class="category-count">${category.totalCategoryProduct}</span>
                                     </a>
                                 </li>
                             </c:forEach>

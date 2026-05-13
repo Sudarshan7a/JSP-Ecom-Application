@@ -23,19 +23,19 @@
                     <div class="site-top-icons">
                         <ul>
                             <c:if test="${sessionScope.account != null}">
-                                <li>
+                                <li class="dropdown">
                                     <c:if test="${account.base64Image != null}">
-                                        <img class="icon" src="data:image/jpg;base64,${account.base64Image}"
+                                        <img class="icon dropdown-toggle" src="data:image/jpg;base64,${account.base64Image}"
                                              id="dropdownMenuReference"
                                              data-toggle="dropdown" alt="image"
-                                             style="width: 1.5em; border-radius: 50%; margin-right: 10px; margin-bottom: 10px">
+                                             style="width: 1.5em; border-radius: 50%; margin-right: 10px; margin-bottom: 10px; cursor: pointer;">
                                     </c:if>
 
                                     <c:if test="${account.base64Image == null}">
-                                        <img class="icon" src="${pageContext.request.contextPath}/static/images/blank_avatar.png?v=20260506"
+                                        <img class="icon dropdown-toggle" src="${pageContext.request.contextPath}/static/images/blank_avatar.png?v=20260506"
                                              id="dropdownMenuReference"
                                              data-toggle="dropdown" alt="image"
-                                             style="width: 1.5em; border-radius: 50%; margin-right: 10px; margin-bottom: 10px">
+                                             style="width: 1.5em; border-radius: 50%; margin-right: 10px; margin-bottom: 10px; cursor: pointer;">
                                     </c:if>
 
                                     <div class="dropdown-menu" aria-labelledby="dropdownMenuReference">
