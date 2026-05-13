@@ -39,8 +39,8 @@
                                     </c:if>
 
                                     <div class="dropdown-menu" aria-labelledby="dropdownMenuReference">
-                                        <a class="dropdown-item" href="profile-page">Your profile</a>
-                                        <a class="dropdown-item" href="logout">Logout</a>
+                                        <a class="dropdown-item" href="${pageContext.request.contextPath}/profile-page">Your profile</a>
+                                        <a class="dropdown-item" href="${pageContext.request.contextPath}/logout">Logout</a>
                                     </div>
                                 </li>
                             </c:if>
