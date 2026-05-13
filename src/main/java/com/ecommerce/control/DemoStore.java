@@ -33,9 +33,9 @@ final class DemoStore {
 
     static List<Category> createCategories() {
         List<Category> categories = new ArrayList<>();
-        categories.add(new Category(1, "RCB Merchandise", 7));
-        categories.add(new Category(2, "Jerseys", 4));
-        categories.add(new Category(3, "Accessories", 4));
+        categories.add(new Category(1, "RCB Merchandise", 8));
+        categories.add(new Category(2, "Jerseys", 2));
+        categories.add(new Category(3, "Accessories", 5));
         return categories;
     }
 

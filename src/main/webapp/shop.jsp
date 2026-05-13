@@ -1,4 +1,5 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <% response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); %>
 
@@ -30,8 +31,14 @@
                     <div class="sidebar">
                         <h3 class="sidebar-title">Categories</h3>
                         <ul class="category-list">
+                            <li class="${empty param.category_id and empty param.keyword ? 'active-category' : ''}">
+                                <a href="${pageContext.request.contextPath}/shop">
+                                    <span>All Products</span>
+                                    <span class="category-count">${fn:length(product_list)}</span>
+                                </a>
+                            </li>
                             <c:forEach items="${category_list}" var="category">
-                                <li>
+                                <li class="${param.category_id == category.id ? 'active-category' : ''}">
                                     <a href="category?category_id=${category.id}">
                                         <span>${category.name}</span>
                                         <span class="category-count">${category.totalCategoryProduct}</span>
@@ -57,8 +64,8 @@
                         </div>
                     </div>
 
-                    <!-- Product Grid -->
-                    <div class="product-grid">
+                    <!-- Product Grid - 3 items per row -->
+                    <div class="product-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)) !important;">
                         <c:forEach items="${product_list}" var="product" varStatus="status">
                             <div class="product-card" data-aos="fade-up">
                                 <div class="product-image">
