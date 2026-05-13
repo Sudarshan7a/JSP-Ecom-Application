@@ -532,6 +532,123 @@ img[alt="Image"] {
 .col-sm-6.col-lg-4.mb-4:nth-child(1) { animation-delay: 0.05s; }
 .col-sm-6.col-lg-4.mb-4:nth-child(2) { animation-delay: 0.1s; }
 .col-sm-6.col-lg-4.mb-4:nth-child(3) { animation-delay: 0.15s; }
+
+/* ---------- Register Page - Auth Screen Improvements ---------- */
+.auth-visual-card {
+  min-height: auto !important;
+  max-height: 80vh;
+  aspect-ratio: 9/10;
+}
+
+.auth-visual-card img {
+  object-fit: cover;
+}
+
+.auth-visual-copy {
+  position: absolute;
+  inset: auto 28px 28px 28px !important;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-visual-copy .auth-kicker {
+  margin-bottom: 0;
+}
+
+.auth-visual-copy h1 {
+  margin-bottom: 8px !important;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.2;
+}
+
+.auth-visual-copy p {
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 20px;
+  font-size: 12px;
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+.auth-form .form-group {
+  margin-bottom: 14px !important;
+}
+
+.auth-form .form-control {
+  border-radius: 8px !important;
+  border: 1px solid #e8dcc8 !important;
+  background: #fffbf7 !important;
+  color: var(--text-primary);
+}
+
+.auth-form .form-control::placeholder {
+  color: #bfb4a3;
+}
+
+.auth-form .form-control:focus {
+  background: #fff !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(199,163,107,0.12) !important;
+}
+
+#blah {
+  transition: transform 0.3s ease;
+}
+
+#blah:hover {
+  transform: scale(1.05);
+}
+
+.mb-4.text-center {
+  margin-bottom: 20px !important;
+}
+
+/* Responsive adjustments for auth screen */
+@media (max-width: 1200px) {
+  .auth-visual-card {
+    aspect-ratio: 4/5;
+  }
+  
+  .auth-visual-copy {
+    inset: auto 24px 24px 24px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-visual-copy {
+    inset: auto 20px 20px 20px !important;
+    gap: 12px;
+  }
+  
+  .auth-visual-copy h1 {
+    font-size: clamp(28px, 3vw, 36px);
+  }
+  
+  .auth-visual-copy p {
+    font-size: 14px;
+  }
+  
+  .chip {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+}
 .col-sm-6.col-lg-4.mb-4:nth-child(4) { animation-delay: 0.2s; }
 .col-sm-6.col-lg-4.mb-4:nth-child(5) { animation-delay: 0.25s; }
 .col-sm-6.col-lg-4.mb-4:nth-child(6) { animation-delay: 0.3s; }
