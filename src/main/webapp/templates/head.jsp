@@ -18,7 +18,9 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/owl.theme.default.min.css?v=20260506">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/magnific-popup.css?v=20260506">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/jquery-ui.css?v=20260506">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260513">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/ui.css?v=20260513">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/luxury.css?v=20260513">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/style.css?v=20260514">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/ui.css?v=20260514">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/luxury.css?v=20260514">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/custom.css?v=20260514">
 </head>
+

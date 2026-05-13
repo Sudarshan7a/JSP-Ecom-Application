@@ -147,7 +147,7 @@
                             </div>
 
                             <!-- Discount row (shown only when coupon applied) -->
-                            <div id="discount-row" class="row mb-3" style="display:none !important;">
+                            <div id="discount-row" class="row mb-3" style="display:none;">
                                 <div class="col-6">
                                     <span class="text-success" id="discount-label">Discount</span>
                                 </div>

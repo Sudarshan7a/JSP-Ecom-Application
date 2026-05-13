@@ -33,17 +33,17 @@ final class DemoStore {
 
     static List<Category> createCategories() {
         List<Category> categories = new ArrayList<>();
-        categories.add(new Category(1, "RCB Merchandise", 8));
-        categories.add(new Category(2, "Jerseys", 2));
-        categories.add(new Category(3, "Accessories", 5));
+        categories.add(new Category(1, "Men", 6));
+        categories.add(new Category(2, "Women", 2));
+        categories.add(new Category(3, "Children", 7));
         return categories;
     }
 
     static List<Product> createProducts() {
         Account seller = createDemoAccount();
-        Category rcbCategory = new Category(1, "RCB Merchandise", 7);
-        Category jerseyCategory = new Category(2, "Jerseys", 4);
-        Category accessoriesCategory = new Category(3, "Accessories", 4);
+        Category rcbCategory = new Category(1, "Men", 6);
+        Category jerseyCategory = new Category(2, "Women", 2);
+        Category accessoriesCategory = new Category(3, "Children", 7);
 
         List<Product> products = new ArrayList<>();
         products.add(new Product(1, "RCB Premium Home Jersey 2024", null, "static/images/puma-rcb-jersey.png", 4999, "Official RCB home jersey with premium fabric and embroidered badge.", jerseyCategory, seller, false, 150));

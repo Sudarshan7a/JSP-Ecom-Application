@@ -8,12 +8,19 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 import javax.servlet.annotation.*;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @WebServlet(name = "OrderHistoryControl", value = "/order-history")
 public class OrderHistoryControl extends HttpServlet {
     // Call DAO class to access with database.
     OrderDao orderDao = new OrderDao();
+
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -24,16 +31,30 @@ public class OrderHistoryControl extends HttpServlet {
             account = DemoStore.createDemoAccount();
             session.setAttribute("account", account);
         }
-        // Get order history of account from database.
-        List<Order> orderList = orderDao.getOrderHistory(account.getId());
-        if (orderList == null || orderList.isEmpty()) {
-            orderList = DemoStore.createOrders();
+
+        List<Order> orderList;
+
+        if (demoMode()) {
+            // In demo mode, use session-stored orders (includes any placed during this session)
+            @SuppressWarnings("unchecked")
+            List<Order> sessionOrders = (List<Order>) session.getAttribute("demo_order_history");
+            if (sessionOrders != null) {
+                orderList = sessionOrders;
+            } else {
+                orderList = DemoStore.createOrders();
+            }
+        } else {
+            // In DB mode, query from database
+            orderList = orderDao.getOrderHistory(account.getId());
+            if (orderList == null || orderList.isEmpty()) {
+                orderList = DemoStore.createOrders();
+            }
         }
 
         request.setAttribute("order_list", orderList);
-        // Set attribute active for order management tab.
+        // Set attribute active for order history tab.
         request.setAttribute("order_history_active", "active");
-        // Get request dispatcher and render to order-management page.
+        // Get request dispatcher and render to order-history page.
         RequestDispatcher requestDispatcher = request.getRequestDispatcher("order-history.jsp");
         requestDispatcher.forward(request, response);
     }

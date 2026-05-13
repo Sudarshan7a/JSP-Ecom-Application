@@ -535,11 +535,14 @@ h1, h2, h3, h4, h5, h6,
   padding-right: 16px !important;
   width: 100%;
 }
-.site-block-top-search input:focus {
+.site-block-top-search input:focus,
+.site-block-top-search input:active {
   background: #fff !important;
   border-color: rgba(32,63,53,0.35) !important;
   box-shadow: 0 0 0 3px rgba(32,63,53,0.08) !important;
   outline: none;
+  /* CRITICAL: override style.css line 693 which sets padding-left:25px on focus */
+  padding-left: 42px !important;
 }
 
 /* ---------- Product Image Fallback ---------- */

@@ -13,6 +13,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @WebServlet(name = "CheckoutControl", value = "/checkout")
 public class CheckoutControl extends HttpServlet {
@@ -69,6 +72,17 @@ public class CheckoutControl extends HttpServlet {
                 account.setAddress(address);
                 account.setEmail(email);
                 account.setPhone(phone);
+
+                // Save order to session-based history so it appears on order-history page
+                @SuppressWarnings("unchecked")
+                List<Order> sessionOrders = (List<Order>) session.getAttribute("demo_order_history");
+                if (sessionOrders == null) {
+                    sessionOrders = new ArrayList<>(DemoStore.createOrders());
+                }
+                int newOrderId = 1000 + sessionOrders.size() + 1;
+                Order placedOrder = new Order(newOrderId, finalTotal, new Date());
+                sessionOrders.add(0, placedOrder); // newest first
+                session.setAttribute("demo_order_history", sessionOrders);
             } else {
                 int accountId = account.getId();
                 accountDao.updateProfileInformation(accountId, firstName, lastName, address, email, phone);
@@ -90,3 +104,4 @@ public class CheckoutControl extends HttpServlet {
         }
     }
 }
+

@@ -10,6 +10,7 @@ com\ecommerce\control\SearchControl.class
 com\ecommerce\dao\AccountDao.class
 com\ecommerce\dao\OrderDao.class
 com\ecommerce\control\CartControl.class
+com\ecommerce\control\CategoryFilterControl.class
 com\ecommerce\dao\ProductDao.class
 com\ecommerce\entity\Category.class
 com\ecommerce\control\ProductManagementControl.class

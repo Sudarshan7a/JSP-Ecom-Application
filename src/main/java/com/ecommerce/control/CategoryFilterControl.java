@@ -46,7 +46,7 @@ public class CategoryFilterControl extends HttpServlet {
             if (demoMode()) {
                 productList = (categoryId > 0) ? DemoStore.productsForCategory(categoryId) : DemoStore.createProducts();
             } else {
-                productList = (categoryId > 0) ? productDao.getAllCategoryProducts(categoryId) : productDao.getFirstPageProducts();
+                productList = (categoryId > 0) ? productDao.getAllCategoryProducts(categoryId) : productDao.getAllProducts();
             }
 
             if (productList == null || productList.isEmpty()) {
