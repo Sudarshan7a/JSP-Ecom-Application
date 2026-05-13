@@ -17,6 +17,12 @@ public class ProductDetail extends HttpServlet {
     // Call DAO class to access with database.
     ProductDao productDao = new ProductDao();
 
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Check if the sending link from out of stock request or not.
@@ -25,7 +31,13 @@ public class ProductDetail extends HttpServlet {
         int id = Integer.parseInt(request.getParameter("id"));
 
         // Get product from database with the given id.
-        Product product = productDao.getProduct(id);
+        Product product;
+        if (demoMode()) {
+            product = DemoStore.findProduct(id);
+        } else {
+            product = productDao.getProduct(id);
+        }
+        
         if (product == null || product.getName() == null || product.getName().trim().isEmpty()) {
             product = DemoStore.findProduct(id);
         }
@@ -42,7 +54,13 @@ public class ProductDetail extends HttpServlet {
         }
 
         // Get all products for feature section.
-        List<Product> productList = productDao.getAllProducts();
+        List<Product> productList;
+        if (demoMode()) {
+            productList = DemoStore.createProducts();
+        } else {
+            productList = productDao.getAllProducts();
+        }
+        
         if (productList == null || productList.isEmpty()) {
             productList = DemoStore.createProducts();
         }
