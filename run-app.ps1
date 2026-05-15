@@ -56,7 +56,40 @@ if (-not (Test-Path (Join-Path $tomcatHome "bin\startup.bat"))) {
     Write-Host "[OK] Tomcat installed" -ForegroundColor Green
 }
 
-# 4. Deploy App to ROOT
+# 4. Stop existing Tomcat if running
+$webapps = Join-Path $tomcatHome "webapps"
+$shutdownBat = Join-Path $tomcatHome "bin\shutdown.bat"
+if (Test-Path $shutdownBat) {
+    Write-Host "`n[*] Stopping existing Tomcat..." -ForegroundColor Yellow
+    Start-Process -FilePath $shutdownBat -WorkingDirectory (Join-Path $tomcatHome "bin") -NoNewWindow -Wait -ErrorAction SilentlyContinue
+    # Wait for Tomcat java process to fully exit
+    $retries = 0
+    while ($retries -lt 15) {
+        $tomcatProcs = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object {
+            try { $_.MainModule.FileName -like "*$tomcatHome*" } catch { $false }
+        }
+        # Also check if the jstl jar is still locked
+        $jstlLocked = $false
+        $jstlPath = Join-Path $webapps "ROOT\WEB-INF\lib\jstl-1.2.jar"
+        if (Test-Path $jstlPath) {
+            try {
+                [IO.File]::Open($jstlPath, 'Open', 'ReadWrite', 'None').Close()
+            } catch {
+                $jstlLocked = $true
+            }
+        }
+        if (-not $tomcatProcs -and -not $jstlLocked) { break }
+        Start-Sleep -Seconds 1
+        $retries++
+    }
+    if ($retries -ge 15) {
+        Write-Host "[WARN] Tomcat may not have fully stopped. Attempting deployment anyway..." -ForegroundColor Yellow
+    } else {
+        Write-Host "[OK] Tomcat stopped" -ForegroundColor Green
+    }
+}
+
+# 5. Deploy App to ROOT
 Write-Host "`n[*] Deploying application..." -ForegroundColor Yellow
 $webapps = Join-Path $tomcatHome "webapps"
 $rootApp = Join-Path $webapps "ROOT"
@@ -68,11 +101,13 @@ if (Test-Path $rootWar) { Remove-Item $rootWar -Force }
 Copy-Item $warFile $rootWar -Force
 Write-Host "[OK] Deployed as ROOT application" -ForegroundColor Green
 
-# 5. Set Environment Variables for Demo Mode
+# 6. Set Environment Variables for DB Mode
 $env:ECOM_DB_USER = "sudupa"
 $env:ECOM_DB_PASSWORD = "root"
+# Also pass as JVM system properties so Tomcat's JVM can always access them
+$env:CATALINA_OPTS = "-Decom.db.user=sudupa -Decom.db.password=root"
 
-# 6. Launch Tomcat
+# 7. Launch Tomcat
 Write-Host "`n----------------------------------------" -ForegroundColor Cyan
 Write-Host "Starting Tomcat Server..." -ForegroundColor Green
 Write-Host "URL: http://localhost:8080" -ForegroundColor Cyan
