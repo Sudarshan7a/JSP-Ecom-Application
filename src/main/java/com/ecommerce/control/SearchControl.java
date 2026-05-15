@@ -20,15 +20,27 @@ public class SearchControl extends HttpServlet {
     ProductDao productDao = new ProductDao();
     CategoryDao categoryDao = new CategoryDao();
 
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Get the search keyword from request.
         String keyword = request.getParameter("keyword");
 
         // Get all products with the given keyword from database.
-        List<Product> productList = productDao.searchProduct(keyword);
+        List<Product> productList = demoMode() ? DemoStore.searchProduct(keyword) : productDao.searchProduct(keyword);
+        if ((productList == null || productList.isEmpty()) && demoMode()) {
+            productList = DemoStore.searchProduct(keyword);
+        }
         // Get all categories from database.
-        List<Category> categoryList = categoryDao.getAllCategories();
+        List<Category> categoryList = demoMode() ? DemoStore.createCategories() : categoryDao.getAllCategories();
+        if (categoryList == null || categoryList.isEmpty()) {
+            categoryList = DemoStore.createCategories();
+        }
 
         request.setAttribute("product_list", productList);
         request.setAttribute("category_list", categoryList);
