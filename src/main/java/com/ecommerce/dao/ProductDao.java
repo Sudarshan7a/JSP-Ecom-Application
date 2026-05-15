@@ -14,7 +14,7 @@ import java.util.Base64;
 import java.util.List;
 
 public class ProductDao {
-    private static final String ONLINE_PRODUCTS_FIRST = " ORDER BY (product_image_url IS NOT NULL AND product_image_url <> '') DESC, product_id ASC";
+    private static final String ONLINE_PRODUCTS_FIRST = " ORDER BY product_id ASC";
 
     Connection connection = null;
     PreparedStatement preparedStatement = null;
@@ -247,10 +247,9 @@ public class ProductDao {
         }
     }
 
-    // Method to insert product with imageUrl (for initialization).
     public void insertProduct(Product product) {
         String query = "INSERT INTO product (product_id, product_name, product_price, product_description, fk_category_id, fk_account_id, product_is_deleted, product_amount, product_image_url) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE product_name=VALUES(product_name), product_price=VALUES(product_price)";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE product_name=VALUES(product_name), product_price=VALUES(product_price), product_description=VALUES(product_description), product_image_url=VALUES(product_image_url), product_is_deleted=VALUES(product_is_deleted), product_image=NULL";
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = new Database().getConnection();
