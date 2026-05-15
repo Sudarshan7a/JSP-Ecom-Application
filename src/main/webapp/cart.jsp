@@ -29,7 +29,7 @@
                             <tr>
                                 <th class="product-thumbnail">Image</th>
                                 <th class="product-name">Product</th>
-                                <th class="product-price">Price (INR)</th>
+                                <th class="product-price-col">Price (INR)</th>
                                 <th class="product-quantity">Quantity</th>
                                 <th class="product-total">Total</th>
                                 <th class="product-remove">Remove</th>

@@ -32,7 +32,7 @@
 
                     <p>${product.description}</p>
 
-                    <p><strong class="text-primary h4">₹${product.price}</strong></p>
+                    <p><strong class="product-price">₹${product.price}</strong></p>
 
                     <form action="${pageContext.request.contextPath}/cart" method="get">
                         <div class="mb-3">
