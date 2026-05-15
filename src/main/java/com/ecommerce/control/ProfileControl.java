@@ -15,6 +15,12 @@ public class ProfileControl extends HttpServlet {
     // Call DAO class to access with the database.
     AccountDao accountDao = new AccountDao();
 
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         RequestDispatcher requestDispatcher = request.getRequestDispatcher("profile-page.jsp");
@@ -35,11 +41,22 @@ public class ProfileControl extends HttpServlet {
 
         // Set default profile image for account.
         Part part = request.getPart("profile-image");
-        InputStream inputStream = part.getInputStream();
+        InputStream inputStream = null;
+        if (part != null) {
+            inputStream = part.getInputStream();
+        }
 
-        System.out.println(accountId + " " + firstName + " " + lastName + " " + address + " " + email + " " + phone);
-
-        accountDao.editProfileInformation(accountId, firstName, lastName, address, email, phone, inputStream);
-        response.sendRedirect("login");
+        if (demoMode()) {
+            account.setFirstName(firstName);
+            account.setLastName(lastName);
+            account.setAddress(address);
+            account.setEmail(email);
+            account.setPhone(phone);
+            session.setAttribute("account", account);
+        } else {
+            accountDao.editProfileInformation(accountId, firstName, lastName, address, email, phone, inputStream);
+        }
+        
+        response.sendRedirect("profile-page");
     }
 }

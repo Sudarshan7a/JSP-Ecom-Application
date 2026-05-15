@@ -13,8 +13,15 @@ import java.io.InputStream;
 @WebServlet(name = "AddProductControl", value = "/add-product")
 @MultipartConfig
 public class AddProductControl extends HttpServlet {
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (demoMode()) { response.sendRedirect("/"); return; }
         // Get product information from request.
         String productName = request.getParameter("product-name");
         double productPrice = Double.parseDouble((request.getParameter("product-price")));

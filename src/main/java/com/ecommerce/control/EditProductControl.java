@@ -24,8 +24,15 @@ public class EditProductControl extends HttpServlet {
     ProductDao productDao = new ProductDao();
     CategoryDao categoryDao = new CategoryDao();
 
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (demoMode()) { response.sendRedirect("/"); return; }
         // Get request product from database.
         int productId = Integer.parseInt(request.getParameter("product-id"));
         // Get product from database.
@@ -41,6 +48,7 @@ public class EditProductControl extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (demoMode()) { response.sendRedirect("/"); return; }
         // Get the product id from request.
         int productId = Integer.parseInt(request.getParameter("product-id"));
         // Get product information from request.

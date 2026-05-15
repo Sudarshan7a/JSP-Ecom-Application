@@ -22,8 +22,15 @@ public class ProductManagementControl extends HttpServlet {
     ProductDao productDao = new ProductDao();
     CategoryDao categoryDao = new CategoryDao();
 
+    private boolean demoMode() {
+        String user = System.getenv("ECOM_DB_USER");
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        return (user == null || user.isBlank() || password == null || password.isBlank());
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        if (demoMode()) { response.sendRedirect("/"); return; }
         // Get the seller id from session.
         HttpSession session = request.getSession();
         Account account = (Account) session.getAttribute("account");
