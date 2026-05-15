@@ -56,28 +56,74 @@ h1, h2, h3, h4, h5, h6,
   box-shadow: var(--shadow-sm);
 }
 
+/* Compact the top bar — aggressively reduce to cut height in half */
+.site-navbar .site-navbar-top {
+  padding-top: 0px !important;
+  padding-bottom: 0px !important;
+  min-height: auto !important;
+}
+.site-navbar .site-navigation {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: -5px !important; /* Pull up navigation */
+}
+
+/* Shrink search bar */
+.site-navbar .site-block-top-search input {
+  height: 32px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  font-size: 13px !important;
+}
+.site-navbar .site-search-icon .icon {
+  font-size: 16px !important;
+}
+
+/* Shrink logo */
 .site-navbar .site-logo a {
-  border: 2px solid var(--primary) !important;
+  border: 1px solid var(--primary) !important;
   color: var(--primary) !important;
   font-weight: 700;
-  letter-spacing: 0.2em;
-  padding: 8px 18px !important;
-  border-radius: 6px;
+  letter-spacing: 0.1em;
+  padding: 2px 8px !important;
+  border-radius: 4px;
   transition: var(--transition);
   text-transform: uppercase;
+  font-size: 14px !important;
+  display: inline-block;
+  margin-bottom: 0 !important;
+}
+.site-navbar .site-logo {
+  margin-bottom: 0 !important;
 }
 .site-navbar .site-logo a:hover {
   background: var(--primary);
   color: #fff !important;
 }
 
+/* Shrink top icons */
+.site-navbar .site-top-icons ul li a {
+  font-size: 18px !important;
+}
+.site-navbar .site-top-icons ul li a .count {
+  width: 18px !important;
+  height: 18px !important;
+  line-height: 18px !important;
+  font-size: 10px !important;
+  margin-top: -15px !important;
+}
+
+/* Shrink nav links */
+.site-navbar .site-navigation .site-menu > li {
+  padding: 0px 4px !important;
+}
 .site-navbar .site-navigation .site-menu > li > a {
   color: var(--text-primary) !important;
   font-weight: 600;
-  font-size: 13px !important;
-  letter-spacing: 0.14em;
+  font-size: 11px !important;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 10px 14px !important;
+  padding: 4px 8px !important;
   border-radius: var(--radius-sm);
   transition: var(--transition);
 }

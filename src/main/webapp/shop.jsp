@@ -24,13 +24,13 @@
     </div>
 
     <main class="product-section">
-        <div class="container">
-            <div class="row mb-5" style="gap: 2rem;">
+        <div class="container-fluid px-4 px-lg-5">
+            <div class="row mb-5">
                 <!-- Sidebar -->
-                <div class="col-md-3 order-1 mb-5 mb-md-0">
+                <div class="col-md-2 order-1 mb-5 mb-md-0">
                     <div class="sidebar">
                         <h3 class="sidebar-title">Categories</h3>
-                        <ul class="category-list">
+                        <ul class="category-list mb-5">
                             <li class="${empty param.category_id and empty param.keyword ? 'active-category' : ''}">
                                 <a href="${pageContext.request.contextPath}/shop">
                                     <span>All Products</span>
@@ -44,16 +44,11 @@
                                 </li>
                             </c:forEach>
                         </ul>
-                    </div>
-                </div>
-
-                <!-- Main Content -->
-                <div class="col-md-9 order-2">
-                    <div class="section-header">
-                        <h1 class="section-title">Premium RCB Merchandise</h1>
-                        <div class="sort-dropdown">
-                            <select id="sortSelect" onchange="sortProducts()">
-                                <option value="relevance">Sort by Relevance</option>
+                        
+                        <h3 class="sidebar-title">Sort By</h3>
+                        <div class="sort-dropdown" style="width: 100%;">
+                            <select id="sortSelect" onchange="sortProducts()" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: inherit;">
+                                <option value="relevance">Relevance</option>
                                 <option value="name-asc">Name, A to Z</option>
                                 <option value="name-desc">Name, Z to A</option>
                                 <option value="price-asc">Price, Low to High</option>
@@ -61,9 +56,16 @@
                             </select>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Product Grid - 3 items per row -->
-                    <div class="product-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)) !important;">
+                <!-- Main Content -->
+                <div class="col-md-10 order-2">
+                    <div class="section-header mb-4">
+                        <h1 class="section-title">Premium RCB Merchandise</h1>
+                    </div>
+
+                    <!-- Product Grid - 4 items per row for wider layout -->
+                    <div class="product-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)) !important;">
                         <c:forEach items="${product_list}" var="product" varStatus="status">
                             <div class="product-card" data-aos="fade-up">
                                 <div class="product-image">
