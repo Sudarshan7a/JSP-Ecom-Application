@@ -13,6 +13,7 @@
 #>
 
 $ErrorActionPreference = "Stop"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ToolsDir = Join-Path $ScriptDir ".dev-tools"
 
