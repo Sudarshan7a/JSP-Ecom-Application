@@ -12,7 +12,7 @@
     Subsequent runs will use the cached tools in the .dev-tools directory.
 #>
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ToolsDir = Join-Path $ScriptDir ".dev-tools"
@@ -162,12 +162,17 @@ Write-Host "[OK] Database is running." -ForegroundColor Green
 # Create schema and user
 Write-Host "    -> Verifying Schema and Credentials..."
 $SqlSetup = @"
-CREATE DATABASE IF NOT EXISTS \`$($Config.DbName)\`;
+CREATE DATABASE IF NOT EXISTS ``$($Config.DbName)``;
 CREATE USER IF NOT EXISTS '$($Config.DbUser)'@'localhost' IDENTIFIED BY '$($Config.DbPass)';
 GRANT ALL PRIVILEGES ON *.* TO '$($Config.DbUser)'@'localhost';
 FLUSH PRIVILEGES;
 "@
 $SqlSetup | & $MysqlClient -u root -P $($Config.DbPort) 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Database initialization failed!"
+    Stop-Process -Id $DbProcess.Id -Force
+    exit 1
+}
 
 # -----------------------------------------------------------------------------
 # 3. Build the Application
