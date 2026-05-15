@@ -517,23 +517,43 @@ Before you start, ensure you have the following installed on your system:
    - Download: [Git for Windows](https://git-scm.com/download/win)
    - Verify: `git --version` in terminal
 
-## 🚀 Setup Instructions
+## 🚀 Zero-Install Quick Start (Recommended)
 
-### Step 1: Clone or Extract the Project
+The easiest way to run this application on a brand new Windows machine is using the fully automated bootstrap script. You do **not** need to manually install Java, Maven, Tomcat, or MySQL.
 
-**Via Git:**
-```powershell
-git clone https://github.com/Rahul-18r/JSP-Ecom-Application.git
-cd JSP-Ecom-Application
-```
+1. **Clone the repository:**
+   ```powershell
+   git clone https://github.com/Rahul-18r/JSP-Ecom-Application.git
+   cd JSP-Ecom-Application
+   ```
 
-**Or extract the ZIP file and navigate to the project directory.**
+2. **Run the Bootstrap Script:**
+   Open PowerShell and execute:
+   ```powershell
+   .\bootstrap-and-run.ps1
+   ```
 
-### Step 2: Configure Database
+**What the script does automatically:**
+- Downloads portable versions of Java 17, Maven 3.9, Tomcat 9, and MariaDB 10.11 (MySQL-compatible) into a hidden `.dev-tools` folder.
+- Starts a local, isolated database instance on port `33306`.
+- Creates the required database schema and default credentials.
+- Compiles the Java code into a `.war` file.
+- Deploys to the portable Tomcat server.
+- Opens your browser to `http://localhost:8080`.
+
+To stop the servers, simply press `Ctrl+C` in the PowerShell window.
+
+---
+
+## 🛠️ Alternative Setup (Manual Installation)
+
+If you prefer to use your own system-wide installations instead of the portable script, follow these steps:
+
+### Step 1: Configure Database
 
 1. **Create the database schema:**
    ```powershell
-   mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS `jsp-servlet-ecommerce-website`;"
+   mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS \`jsp-servlet-ecommerce-website\`;"
    ```
    (Enter password `root` when prompted)
 
@@ -543,30 +563,15 @@ cd JSP-Ecom-Application
    ```
    (Enter password `root` when prompted)
 
-3. **Verify the import:**
-   ```powershell
-   mysql -u root -p -e "USE jsp-servlet-ecommerce-website; SHOW TABLES; SELECT COUNT(*) FROM product; SELECT COUNT(*) FROM account;"
-   ```
-   Expected output should show tables: `account`, `category`, `order`, `order_detail`, `product`
-
-4. **Configure database credentials:**
+3. **Configure database credentials:**
    - Set environment variables before starting Tomcat:
      ```powershell
      $env:ECOM_DB_URL="jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website"
      $env:ECOM_DB_USER="root"
      $env:ECOM_DB_PASSWORD="root"
      ```
-     ```bash
-     export ECOM_DB_URL="jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website"
-     export ECOM_DB_USER="root"
-     export ECOM_DB_PASSWORD="root"
-     ```
-   - Or pass JVM properties:
-     ```powershell
-     -Decom.db.url=jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website -Decom.db.user=root -Decom.db.password=root
-     ```
 
-### Step 3: Build the Project
+### Step 2: Build the Project
 
 Navigate to the project root directory and run:
 
