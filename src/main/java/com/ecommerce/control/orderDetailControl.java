@@ -17,7 +17,20 @@ public class orderDetailControl extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Get order id from request.
-        int orderId = Integer.parseInt(request.getParameter("order-id"));
+        String orderIdStr = request.getParameter("order_id");
+        if (orderIdStr == null || orderIdStr.isEmpty()) {
+            response.sendRedirect("order-history");
+            return;
+        }
+
+        int orderId;
+        try {
+            orderId = Integer.parseInt(orderIdStr);
+        } catch (NumberFormatException e) {
+            response.sendRedirect("order-history");
+            return;
+        }
+
         // Get order by id from database.
         List<CartProduct> list = orderDao.getOrderDetailHistory(orderId);
         if (list == null || list.isEmpty()) {

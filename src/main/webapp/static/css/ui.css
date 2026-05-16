@@ -349,11 +349,14 @@ h1, h2, h3, h4, h5, h6,
   transform: translateY(-2px);
 }
 
-.btn.btn-outline-primary,
-.btn-outline-primary,
-.btn.btn-secondary.btn-sm.dropdown-toggle,
-.btn.btn-outline-primary.btn-sm {
-  border-color: rgba(255,255,255,0.18) !important;
+.hero-actions .btn.btn-outline-primary,
+.hero-actions .btn-outline-primary,
+.merch-card__actions .btn.btn-outline-primary,
+.merch-card__actions .btn-outline-primary,
+.hero-actions .btn.btn-secondary.btn-sm.dropdown-toggle,
+.hero-actions .btn.btn-outline-primary.btn-sm,
+.merch-card__actions .btn.btn-outline-primary.btn-sm {
+  border-color: rgba(255,255,255,0.25) !important;
   color: #fff !important;
   border-radius: 999px !important;
   text-transform: uppercase;
@@ -362,9 +365,11 @@ h1, h2, h3, h4, h5, h6,
   background: rgba(255,255,255,0.08) !important;
 }
 
-.btn.btn-outline-primary:hover,
-.btn-outline-primary:hover,
-.btn.btn-secondary.btn-sm.dropdown-toggle:hover {
+.hero-actions .btn.btn-outline-primary:hover,
+.hero-actions .btn-outline-primary:hover,
+.merch-card__actions .btn.btn-outline-primary:hover,
+.merch-card__actions .btn-outline-primary:hover,
+.hero-actions .btn.btn-secondary.btn-sm.dropdown-toggle:hover {
   background: #fff !important;
   color: var(--olive) !important;
 }
