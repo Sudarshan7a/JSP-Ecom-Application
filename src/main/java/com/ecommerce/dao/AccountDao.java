@@ -106,7 +106,7 @@ public class AccountDao {
                 "account_address = ?, " +
                 "account_email = ?, " +
                 "account_phone = ?, " +
-                "account_image = ?" +
+                "account_image = ? " +
                 "WHERE account_id = ?";
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");

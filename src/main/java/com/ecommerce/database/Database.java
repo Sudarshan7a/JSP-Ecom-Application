@@ -7,6 +7,20 @@ import java.sql.SQLException;
 public class Database {
     private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website";
 
+    public static boolean hasConfiguredCredentials() {
+        String user = System.getenv("ECOM_DB_USER");
+        if (user == null || user.isBlank()) {
+            user = System.getProperty("ecom.db.user");
+        }
+
+        String password = System.getenv("ECOM_DB_PASSWORD");
+        if (password == null || password.isBlank()) {
+            password = System.getProperty("ecom.db.password");
+        }
+
+        return user != null && !user.isBlank() && password != null && !password.isBlank();
+    }
+
     private String getEnvOrProperty(String envKey, String propertyKey, String defaultValue) {
         String value = System.getenv(envKey);
         if (value == null || value.isBlank()) {

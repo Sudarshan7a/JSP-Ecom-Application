@@ -1,6 +1,7 @@
 package com.ecommerce.control;
 
 import com.ecommerce.dao.AccountDao;
+import com.ecommerce.database.Database;
 import com.ecommerce.entity.Account;
 
 import javax.servlet.ServletException;
@@ -20,9 +21,7 @@ public class RegisterControl extends HttpServlet {
     AccountDao accountDao = new AccountDao();
 
     private boolean demoMode() {
-        String user = System.getenv("ECOM_DB_USER");
-        String password = System.getenv("ECOM_DB_PASSWORD");
-        return (user == null || user.isBlank() || password == null || password.isBlank());
+        return !Database.hasConfiguredCredentials();
     }
 
     @Override

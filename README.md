@@ -519,7 +519,7 @@ Before you start, ensure you have the following installed on your system:
 
 ## 🚀 Zero-Install Quick Start (Recommended)
 
-The easiest way to run this application on a brand new Windows machine is using the fully automated bootstrap script. You do **not** need to manually install Java, Maven, Tomcat, or MySQL.
+The easiest way to run this application on a brand new Windows machine is using the fully automated bootstrap script. It downloads and runs everything from the project folder, so you do **not** need to manually install Java, Maven, Tomcat, or MySQL.
 
 1. **Clone the repository:**
    ```powershell
@@ -533,13 +533,15 @@ The easiest way to run this application on a brand new Windows machine is using 
    .\bootstrap-and-run.ps1
    ```
 
-**What the script does automatically:**
+- **What the script does automatically:**
 - Downloads portable versions of Java 17, Maven 3.9, Tomcat 9, and MariaDB 10.11 (MySQL-compatible) into a hidden `.dev-tools` folder.
 - Starts a local, isolated database instance on port `33306`.
 - Creates the required database schema and default credentials.
 - Compiles the Java code into a `.war` file.
 - Deploys to the portable Tomcat server.
-- Opens your browser to `http://localhost:8080`.
+- Opens your browser to `http://localhost:8081`.
+
+If you want a shorter launcher, `run-app.ps1`, `run.bat`, and `run-simple.bat` now just delegate to the same portable bootstrap flow from whatever folder the repository lives in.
 
 To stop the servers, simply press `Ctrl+C` in the PowerShell window.
 
