@@ -4,7 +4,10 @@
 $ErrorActionPreference = "Stop"
 $projectName = "jsp-servlet-ecommerce-website"
 $warFile = Join-Path $PSScriptRoot "target\test-1.0-SNAPSHOT.war"
-$tomcatRoot = "C:\tomcat-ecom"
+$toolsRoot = Join-Path $PSScriptRoot ".dev-tools"
+$tomcatRoot = $toolsRoot
+$jdkHome = Join-Path $toolsRoot "jdk-17.0.11+9"
+$jdkZip = Join-Path $toolsRoot "jdk-17.0.11+9.zip"
 $tomcatHome = Join-Path $tomcatRoot "apache-tomcat-9.0.117"
 $mavenHome = Join-Path $tomcatRoot "apache-maven-3.9.6"
 $mvnCmd = "mvn"
@@ -13,15 +16,26 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "   JSP E-Commerce App Launcher & Builder" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
+# 0. Setup JDK if missing
+if (-not (Test-Path (Join-Path $jdkHome "bin\java.exe"))) {
+    Write-Host "[*] Downloading JDK 17..." -ForegroundColor Yellow
+    if (-not (Test-Path $toolsRoot)) { New-Item -ItemType Directory -Path $toolsRoot | Out-Null }
+    $jdkUrl = "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_windows_hotspot_17.0.11_9.zip"
+    Invoke-WebRequest -Uri $jdkUrl -OutFile $jdkZip
+    Write-Host "[*] Extracting JDK..." -ForegroundColor Yellow
+    Expand-Archive -Path $jdkZip -DestinationPath $toolsRoot -Force
+    Remove-Item $jdkZip
+}
+
 # 1. Setup Maven if missing
 if (-not (Get-Command mvn -ErrorAction SilentlyContinue)) {
     if (-not (Test-Path (Join-Path $mavenHome "bin\mvn.cmd"))) {
         Write-Host "[*] Downloading Maven 3.9.6..." -ForegroundColor Yellow
-        if (-not (Test-Path $tomcatRoot)) { New-Item -ItemType Directory -Path $tomcatRoot | Out-Null }
+        if (-not (Test-Path $toolsRoot)) { New-Item -ItemType Directory -Path $toolsRoot | Out-Null }
         $mvnZip = Join-Path $tomcatRoot "maven.zip"
         Invoke-WebRequest -Uri "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.zip" -OutFile $mvnZip
         Write-Host "[*] Extracting Maven..." -ForegroundColor Yellow
-        Expand-Archive -Path $mvnZip -DestinationPath $tomcatRoot -Force
+        Expand-Archive -Path $mvnZip -DestinationPath $toolsRoot -Force
         Remove-Item $mvnZip
     }
     $mvnCmd = Join-Path $mavenHome "bin\mvn.cmd"
@@ -43,15 +57,15 @@ Write-Host "[OK] Build successful!" -ForegroundColor Green
 # 3. Download Tomcat 9 if missing
 if (-not (Test-Path (Join-Path $tomcatHome "bin\startup.bat"))) {
     Write-Host "`n[*] Downloading Tomcat 9.0.117 (first time only)..." -ForegroundColor Yellow
-    if (-not (Test-Path $tomcatRoot)) { New-Item -ItemType Directory -Path $tomcatRoot | Out-Null }
+    if (-not (Test-Path $toolsRoot)) { New-Item -ItemType Directory -Path $toolsRoot | Out-Null }
     
-    $zipPath = Join-Path $tomcatRoot "tomcat.zip"
+    $zipPath = Join-Path $toolsRoot "tomcat.zip"
     $url = "https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.117/bin/apache-tomcat-9.0.117.zip"
     
     Invoke-WebRequest -Uri $url -OutFile $zipPath
     
     Write-Host "[*] Extracting Tomcat..." -ForegroundColor Yellow
-    Expand-Archive -Path $zipPath -DestinationPath $tomcatRoot -Force
+    Expand-Archive -Path $zipPath -DestinationPath $toolsRoot -Force
     Remove-Item $zipPath
     Write-Host "[OK] Tomcat installed" -ForegroundColor Green
 }
@@ -102,10 +116,12 @@ Copy-Item $warFile $rootWar -Force
 Write-Host "[OK] Deployed as ROOT application" -ForegroundColor Green
 
 # 6. Set Environment Variables for DB Mode
+$env:JAVA_HOME = $jdkHome
 $env:ECOM_DB_USER = "sudupa"
 $env:ECOM_DB_PASSWORD = "root"
+$env:ECOM_DB_URL = "jdbc:mysql://localhost:33306/jsp-servlet-ecommerce-website"
 # Also pass as JVM system properties so Tomcat's JVM can always access them
-$env:CATALINA_OPTS = "-Decom.db.user=sudupa -Decom.db.password=root"
+$env:CATALINA_OPTS = '-Decom.db.url="' + $env:ECOM_DB_URL + '" -Decom.db.user=sudupa -Decom.db.password=root'
 
 # 7. Launch Tomcat
 Write-Host "`n----------------------------------------" -ForegroundColor Cyan

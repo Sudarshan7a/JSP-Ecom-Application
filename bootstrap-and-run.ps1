@@ -108,6 +108,9 @@ $MariaDbPath = Download-And-Extract $Config.MariaDbUrl $Config.MariaDbDir "Maria
 $env:JAVA_HOME = $JdkPath
 $env:M2_HOME = $MavenPath
 $env:CATALINA_HOME = $TomcatPath
+$env:ECOM_DB_USER = $Config.DbUser
+$env:ECOM_DB_PASSWORD = $Config.DbPass
+$env:ECOM_DB_URL = "jdbc:mysql://localhost:$($Config.DbPort)/$($Config.DbName)"
 
 $MvnBin = Join-Path $MavenPath "bin\mvn.cmd"
 $TomcatStart = Join-Path $TomcatPath "bin\startup.bat"
@@ -254,7 +257,7 @@ if (Test-Path $RootWar) { Remove-Item $RootWar -Force }
 Copy-Item ".\target\test-1.0-SNAPSHOT.war" $RootWar -Force
 
 # Configure Tomcat to use our portable DB parameters
-$DbUrl = "jdbc:mysql://localhost:$($Config.DbPort)/$($Config.DbName)"
+$DbUrl = $env:ECOM_DB_URL
 $env:CATALINA_OPTS = "-Decom.db.url=""$DbUrl"" -Decom.db.user=""$($Config.DbUser)"" -Decom.db.password=""$($Config.DbPass)"""
 
 Write-Host "    -> Starting Tomcat..."
