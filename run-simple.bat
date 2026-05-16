@@ -70,7 +70,7 @@ REM Step 5: Start Tomcat
 echo.
 echo ========================================
 echo [*] Starting Tomcat...
-echo [✓] App available at: http://localhost:8080
+echo [✓] App available at: http://localhost:8081
 echo [*] Press Ctrl+C to stop
 echo ========================================
 echo.

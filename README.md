@@ -533,13 +533,13 @@ The easiest way to run this application on a brand new Windows machine is using 
    .\bootstrap-and-run.ps1
    ```
 
-**What the script does automatically:**
+-**What the script does automatically:**
 - Downloads portable versions of Java 17, Maven 3.9, Tomcat 9, and MariaDB 10.11 (MySQL-compatible) into a hidden `.dev-tools` folder.
 - Starts a local, isolated database instance on port `33306`.
 - Creates the required database schema and default credentials.
 - Compiles the Java code into a `.war` file.
 - Deploys to the portable Tomcat server.
-- Opens your browser to `http://localhost:8080`.
+- Opens your browser to `http://localhost:8081`.
 
 To stop the servers, simply press `Ctrl+C` in the PowerShell window.
 

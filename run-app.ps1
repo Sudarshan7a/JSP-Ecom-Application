@@ -110,7 +110,7 @@ $env:CATALINA_OPTS = "-Decom.db.user=sudupa -Decom.db.password=root"
 # 7. Launch Tomcat
 Write-Host "`n----------------------------------------" -ForegroundColor Cyan
 Write-Host "Starting Tomcat Server..." -ForegroundColor Green
-Write-Host "URL: http://localhost:8080" -ForegroundColor Cyan
+Write-Host "URL: http://localhost:8081" -ForegroundColor Cyan
 Write-Host "Press Ctrl+C to exit this script (server stays running)" -ForegroundColor Gray
 Write-Host "----------------------------------------" -ForegroundColor Cyan
 
@@ -119,5 +119,5 @@ Start-Process -FilePath (Join-Path $tomcatHome "bin\startup.bat") -WorkingDirect
 
 Write-Host "Launching browser..." -ForegroundColor Gray
 Start-Sleep -Seconds 5
-Start-Process "http://localhost:8080"
+Start-Process "http://localhost:8081"
 

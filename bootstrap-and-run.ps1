@@ -113,6 +113,19 @@ $MvnBin = Join-Path $MavenPath "bin\mvn.cmd"
 $TomcatStart = Join-Path $TomcatPath "bin\startup.bat"
 $TomcatStop = Join-Path $TomcatPath "bin\shutdown.bat"
 
+# Ensure Tomcat will use port 8081 to match README and avoid common port conflicts
+$ServerXml = Join-Path $TomcatPath "conf\server.xml"
+if (Test-Path $ServerXml) {
+    try {
+        (Get-Content $ServerXml) -replace 'port="8080"', 'port="8081"' | Set-Content $ServerXml
+        Write-Host "[OK] Configured Tomcat to use port 8081." -ForegroundColor Green
+    } catch {
+        Write-Warning "Failed to update server.xml to port 8081: $_"
+    }
+} else {
+    Write-Warning "Tomcat server.xml not found; Tomcat will keep its default ports."
+}
+
 # -----------------------------------------------------------------------------
 # 2. Database Initialization and Startup
 # -----------------------------------------------------------------------------
@@ -127,7 +140,12 @@ $MysqlClient = Join-Path $MariaDbBin "mysql.exe"
 # Initialize DB if data dir doesn't exist
 if (-not (Test-Path $DbDataDir)) {
     Write-Host "    -> Initializing fresh database files..."
-    & $MysqlInstallDb --datadir=$DbDataDir 2>&1 | Out-Null
+    if (Test-Path $MysqlInstallDb) {
+        & $MysqlInstallDb --datadir=$DbDataDir 2>&1 | Out-Null
+    } else {
+        Write-Host "    -> mysql_install_db.exe not found; creating data directory instead." -ForegroundColor Yellow
+        Ensure-Directory $DbDataDir
+    }
 }
 
 # Find and kill any existing mysqld running from our dev-tools
@@ -174,6 +192,41 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# Import schema from SQL dump
+Write-Host "    -> Importing Database Schema..."
+$DumpFile = Join-Path $ScriptDir "Dump20210903.sql"
+if (-not (Test-Path $DumpFile)) {
+    Write-Error "Database dump file not found: $DumpFile"
+    Stop-Process -Id $DbProcess.Id -Force
+    exit 1
+}
+
+# Read and execute SQL dump
+try {
+    $SqlContent = Get-Content $DumpFile -Raw
+    $SqlContent | & $MysqlClient -u $($Config.DbUser) -p$($Config.DbPass) -P $($Config.DbPort) 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Some SQL statements failed, but continuing..."
+    }
+} catch {
+    Write-Error "Failed to import database schema: $_"
+    Stop-Process -Id $DbProcess.Id -Force
+    exit 1
+}
+
+Write-Host "[OK] Database schema imported." -ForegroundColor Green
+
+# Also fix collation in the dump file to be MariaDB compatible (one-time fix)
+if ((Select-String -Path $DumpFile -Pattern "utf8mb4_0900_ai_ci" -Quiet) -eq $true) {
+    Write-Host "    -> Fixing SQL collation compatibility..."
+    (Get-Content $DumpFile) -replace 'utf8mb4_0900_ai_ci', 'utf8mb4_unicode_ci' | Set-Content $DumpFile
+}
+
+# Add missing product_image_url column if it doesn't exist
+Write-Host "    -> Ensuring schema is up-to-date..."
+$AlterTableSql = "ALTER TABLE product ADD COLUMN IF NOT EXISTS product_image_url varchar(1000) DEFAULT NULL;"
+$AlterTableSql | & $MysqlClient -u $($Config.DbUser) -p$($Config.DbPass) -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
+
 # -----------------------------------------------------------------------------
 # 3. Build the Application
 # -----------------------------------------------------------------------------
@@ -213,10 +266,10 @@ Write-Host "[OK] Tomcat is running." -ForegroundColor Green
 # -----------------------------------------------------------------------------
 # 5. Open Browser and Monitor
 # -----------------------------------------------------------------------------
-Start-Process "http://localhost:8080"
+Start-Process "http://localhost:8081"
 
 Write-Host "`n=======================================================" -ForegroundColor Magenta
-Write-Host " Application is live at: http://localhost:8080" -ForegroundColor White
+Write-Host " Application is live at: http://localhost:8081" -ForegroundColor White
 Write-Host " Database is running on port: $($Config.DbPort)" -ForegroundColor White
 Write-Host "=======================================================" -ForegroundColor Magenta
 Write-Host "`nPress Ctrl+C to gracefully shut down the servers and exit." -ForegroundColor Yellow
