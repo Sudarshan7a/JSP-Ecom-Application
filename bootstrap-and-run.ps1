@@ -195,19 +195,22 @@ Get-WmiObject Win32_Process -Filter "name='mysqld.exe'" | Where-Object { $_.Comm
 }
 Start-Sleep -Seconds 1
 
-# Check if db-data has valid MariaDB system tables (mysql/user.frm or mysql/global_priv.frm)
-$DbInitialized = (Test-Path (Join-Path $DbDataDir "mysql\global_priv.frm")) -or `
-                 (Test-Path (Join-Path $DbDataDir "mysql\user.frm")) -or `
-                 (Test-Path (Join-Path $DbDataDir "mysql\global_priv.MAD"))
+# Check if db-data has valid MariaDB system tables AND matching InnoDB files
+# We check ibdata1 exists AND mysql system tables exist — both must be present
+$DbInitialized = ((Test-Path (Join-Path $DbDataDir "mysql\global_priv.frm")) -or `
+                  (Test-Path (Join-Path $DbDataDir "mysql\global_priv.MAD"))) -and `
+                 (Test-Path (Join-Path $DbDataDir "ibdata1"))
 
 if (-not $DbInitialized) {
     # Wipe any partial/corrupt db-data and reinitialize cleanly
     if (Test-Path $DbDataDir) {
-        Write-Host "    -> Removing incomplete db-data directory for clean init..." -ForegroundColor Yellow
+        Write-Host "    -> Removing incomplete/corrupt db-data directory for clean init..." -ForegroundColor Yellow
         Remove-Item $DbDataDir -Recurse -Force
     }
     Write-Host "    -> Initializing fresh database files (this takes ~30s)..."
     Ensure-Directory $DbDataDir
+    # Write my.ini into the fresh db-data dir before init
+    Set-Content -Path (Join-Path $DbDataDir "my.ini") -Value $MyIniContent -Force
     # mysql_install_db bootstraps the system grant tables
     & $MysqlInstallDb --datadir="$DbDataDir" --port=$($Config.DbPort) 2>&1 | Out-Null
     Write-Host "    -> Database initialized." -ForegroundColor Cyan
