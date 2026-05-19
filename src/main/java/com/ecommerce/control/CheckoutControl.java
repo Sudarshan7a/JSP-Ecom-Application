@@ -52,8 +52,11 @@ public class CheckoutControl extends HttpServlet {
             double sessionTotal = session.getAttribute("total_price") != null
                     ? (double) session.getAttribute("total_price") : 0.0;
 
+            String couponCode = request.getParameter("applied-coupon");
+            String couponDiscountParam = request.getParameter("coupon-discount");
             String discountedParam = request.getParameter("discounted-total");
             double finalTotal = sessionTotal;
+            double discountAmount = 0.0;
             if (discountedParam != null && !discountedParam.isBlank()) {
                 try {
                     double submitted = Double.parseDouble(discountedParam);
@@ -62,6 +65,12 @@ public class CheckoutControl extends HttpServlet {
                     }
                 } catch (NumberFormatException ignored) {}
             }
+            if (couponDiscountParam != null && !couponDiscountParam.isBlank()) {
+                try {
+                    discountAmount = Double.parseDouble(couponDiscountParam);
+                } catch (NumberFormatException ignored) {}
+            }
+            double subtotal = sessionTotal;
 
             Order order = (Order) session.getAttribute("order");
             Account account = (Account) session.getAttribute("account");
@@ -86,7 +95,7 @@ public class CheckoutControl extends HttpServlet {
             } else {
                 int accountId = account.getId();
                 accountDao.updateProfileInformation(accountId, firstName, lastName, address, email, phone);
-                orderDao.createOrder(account.getId(), finalTotal, order != null ? order.getCartProducts() : new java.util.ArrayList<>());
+                orderDao.createOrder(account.getId(), subtotal, finalTotal, couponCode, discountAmount, order != null ? order.getCartProducts() : new java.util.ArrayList<>());
             }
 
             // Save details for thank-you page display BEFORE clearing session
@@ -94,6 +103,9 @@ public class CheckoutControl extends HttpServlet {
                 session.setAttribute("placed_order_items", order.getCartProducts());
             }
             session.setAttribute("placed_order_total", finalTotal);
+            session.setAttribute("placed_order_subtotal", subtotal);
+            session.setAttribute("placed_order_coupon_code", couponCode);
+            session.setAttribute("placed_order_discount", discountAmount);
             session.setAttribute("placed_order_name", (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : ""));
 
             session.removeAttribute("order");
