@@ -12,6 +12,11 @@
     Subsequent runs will use the cached tools in the .dev-tools directory.
 #>
 
+param(
+    [switch]$SetupOnly,
+    [switch]$StartOnly
+)
+
 $ErrorActionPreference = "Continue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
@@ -77,10 +82,6 @@ function Download-And-Extract {
     return $TargetDir
 }
 
-param(
-    [switch]$SetupOnly,
-    [switch]$StartOnly
-)
 
 # -----------------------------------------------------------------------------
 # 1. Setup Toolchain
