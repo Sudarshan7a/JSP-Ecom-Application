@@ -1,5 +1,7 @@
 package com.ecommerce.control;
 
+import com.ecommerce.database.Database;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -32,6 +34,7 @@ public class ContactControl extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String name = request.getParameter("c_fname");
+        String lastName = request.getParameter("c_lname");
         String email = request.getParameter("c_email");
         String subject = request.getParameter("c_subject");
         String message = request.getParameter("c_message");
@@ -48,28 +51,27 @@ public class ContactControl extends HttpServlet {
         // Attempt to save to database (non-fatal if table doesn't exist)
         if (!demoMode()) {
             try {
-                String dbUser = System.getenv("ECOM_DB_USER");
-                String dbPass = System.getenv("ECOM_DB_PASSWORD");
-                String url = "jdbc:mysql://localhost:3306/ecommerce";
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
+                Database database = new Database();
+                try (Connection conn = database.getConnection()) {
                     // Create table if not exists
                     conn.createStatement().executeUpdate(
                         "CREATE TABLE IF NOT EXISTS contact_messages (" +
                         "id INT AUTO_INCREMENT PRIMARY KEY, " +
-                        "name VARCHAR(100), " +
+                        "first_name VARCHAR(100), " +
+                        "last_name VARCHAR(100), " +
                         "email VARCHAR(150), " +
                         "subject VARCHAR(200), " +
                         "message TEXT, " +
                         "submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
                     );
                     PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO contact_messages (name, email, subject, message) VALUES (?, ?, ?, ?)"
+                        "INSERT INTO contact_messages (first_name, last_name, email, subject, message) VALUES (?, ?, ?, ?, ?)"
                     );
                     ps.setString(1, name);
-                    ps.setString(2, email);
-                    ps.setString(3, subject);
-                    ps.setString(4, message);
+                    ps.setString(2, lastName);
+                    ps.setString(3, email);
+                    ps.setString(4, subject);
+                    ps.setString(5, message);
                     ps.executeUpdate();
                     System.out.println("[ContactControl] Message saved to DB.");
                 }
@@ -83,6 +85,7 @@ public class ContactControl extends HttpServlet {
         HttpSession session = request.getSession();
         session.setAttribute("contact_message_sent", true);
         session.setAttribute("contact_message_name", name);
+        session.setAttribute("contact_message_last_name", lastName);
         session.setAttribute("contact_message_email", email);
         session.setAttribute("contact_message_subject", subject);
 
