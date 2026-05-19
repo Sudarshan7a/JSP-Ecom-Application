@@ -53,6 +53,8 @@ public class OrderDao {
         for (CartProduct cartProduct : cartProducts) {
             productDao.decreaseProductAmount(cartProduct.getProduct().getId(), cartProduct.getQuantity());
             try {
+                // Compute the discounted unit price once and store it directly.
+                // getOrderDetailHistory() reads this stored price as-is — no second discount pass.
                 double unitPrice = cartProduct.getPrice();
                 if (discountPercentage > 0) {
                     double factor = (100.0 - discountPercentage) / 100.0;
@@ -145,23 +147,13 @@ public class OrderDao {
     // Method to get order detail history.
     public List<CartProduct> getOrderDetailHistory(int orderId) {
         List<CartProduct> list = new ArrayList<>();
-        // First, read order-level discount (stored as percentage in discount_amount)
-        double discountPercentage = 0.0;
-        String orderQuery = "SELECT discount_amount FROM `order` WHERE order_id = ?";
+        // product_price in order_detail already stores the final paid price (discounted at order time).
+        // Do NOT re-apply any discount here — just read the stored price directly.
         String detailQuery = "SELECT fk_product_id, product_quantity, product_price FROM order_detail WHERE fk_order_id = ?";
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = new Database().getConnection();
 
-            // get discount percentage for the order (if any)
-            preparedStatement = connection.prepareStatement(orderQuery);
-            preparedStatement.setInt(1, orderId);
-            resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                discountPercentage = resultSet.getDouble("discount_amount");
-            }
-
-            // now get order details
             preparedStatement = connection.prepareStatement(detailQuery);
             preparedStatement.setInt(1, orderId);
             resultSet = preparedStatement.executeQuery();
@@ -169,13 +161,6 @@ public class OrderDao {
                 int productId = resultSet.getInt("fk_product_id");
                 int quantity = resultSet.getInt("product_quantity");
                 double unitPrice = resultSet.getDouble("product_price");
-
-                // If a percentage discount was applied, compute per-item discounted unit price
-                if (discountPercentage > 0) {
-                    double factor = (100.0 - discountPercentage) / 100.0;
-                    double discounted = Math.round(unitPrice * factor * 100.0) / 100.0;
-                    unitPrice = discounted;
-                }
 
                 Product product = productDao.getProduct(productId);
                 list.add(new CartProduct(product, quantity, unitPrice));
