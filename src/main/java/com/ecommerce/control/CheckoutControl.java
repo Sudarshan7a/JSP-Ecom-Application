@@ -30,6 +30,19 @@ public class CheckoutControl extends HttpServlet {
     }
 
     @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Checkout is reached via a form POST from cart.jsp, but handle GET gracefully
+        // (e.g. direct navigation or browser back button)
+        HttpSession session = request.getSession();
+        if (session.getAttribute("account") == null && !demoMode()) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+        RequestDispatcher rd = request.getRequestDispatcher("checkout.jsp");
+        rd.forward(request, response);
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
         // Get information from input field.
@@ -65,12 +78,27 @@ public class CheckoutControl extends HttpServlet {
                     }
                 } catch (NumberFormatException ignored) {}
             }
+            // discountAmount here is the percentage (e.g. 25 for RCB25).
+            // Compute the actual rupee saving for display purposes.
+            double discountPercentage = 0.0;
             if (couponDiscountParam != null && !couponDiscountParam.isBlank()) {
                 try {
-                    discountAmount = Double.parseDouble(couponDiscountParam);
+                    discountPercentage = Double.parseDouble(couponDiscountParam);
                 } catch (NumberFormatException ignored) {}
             }
+            double rupeeDiscount = Math.round((sessionTotal - finalTotal) * 100.0) / 100.0;
             double subtotal = sessionTotal;
+
+            // Store coupon info in session so checkout.jsp can display the discount row
+            if (couponCode != null && !couponCode.isBlank()) {
+                session.setAttribute("checkout_coupon_code", couponCode);
+                session.setAttribute("checkout_discount_amount", rupeeDiscount);
+                session.setAttribute("checkout_final_total", finalTotal);
+            } else {
+                session.removeAttribute("checkout_coupon_code");
+                session.removeAttribute("checkout_discount_amount");
+                session.removeAttribute("checkout_final_total");
+            }
 
             Order order = (Order) session.getAttribute("order");
             Account account = (Account) session.getAttribute("account");
@@ -95,7 +123,8 @@ public class CheckoutControl extends HttpServlet {
             } else {
                 int accountId = account.getId();
                 accountDao.updateProfileInformation(accountId, firstName, lastName, address, email, phone);
-                orderDao.createOrder(account.getId(), subtotal, finalTotal, couponCode, discountAmount, order != null ? order.getCartProducts() : new java.util.ArrayList<>());
+                // Pass discountPercentage so createOrderDetail stores the correct per-item paid price
+                orderDao.createOrder(account.getId(), subtotal, finalTotal, couponCode, discountPercentage, order != null ? order.getCartProducts() : new java.util.ArrayList<>());
             }
 
             // Save details for thank-you page display BEFORE clearing session
@@ -105,11 +134,15 @@ public class CheckoutControl extends HttpServlet {
             session.setAttribute("placed_order_total", finalTotal);
             session.setAttribute("placed_order_subtotal", subtotal);
             session.setAttribute("placed_order_coupon_code", couponCode);
-            session.setAttribute("placed_order_discount", discountAmount);
+            session.setAttribute("placed_order_discount", rupeeDiscount);
             session.setAttribute("placed_order_name", (firstName != null ? firstName : "") + " " + (lastName != null ? lastName : ""));
 
+            // Clear cart and checkout coupon state
             session.removeAttribute("order");
             session.removeAttribute("total_price");
+            session.removeAttribute("checkout_coupon_code");
+            session.removeAttribute("checkout_discount_amount");
+            session.removeAttribute("checkout_final_total");
 
             RequestDispatcher requestDispatcher = request.getRequestDispatcher("thankyou.jsp");
             requestDispatcher.forward(request, response);

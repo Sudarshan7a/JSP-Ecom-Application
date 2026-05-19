@@ -1,4 +1,5 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <% response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); %>
 
@@ -137,10 +138,30 @@
                                     <tr>
                                         <td></td>
                                         <td></td>
+                                        <td class="text-black font-weight-bold"><strong>Subtotal</strong></td>
+                                        <td class="text-black font-weight-bold">
+                                            <input name="order-subtotal-price" class="form-control-plaintext h5 text-black"
+                                                   value="${total_price}" style="text-align: center" readonly>
+                                        </td>
+                                    </tr>
+                                    <c:if test="${not empty sessionScope.checkout_coupon_code}">
+                                    <tr>
+                                        <td></td>
+                                        <td></td>
+                                        <td class="text-success"><strong>Discount (${sessionScope.checkout_coupon_code})</strong></td>
+                                        <td class="text-success">
+                                            -&#8377;<fmt:formatNumber value="${sessionScope.checkout_discount_amount}" type="number" maxFractionDigits="2"/>
+                                        </td>
+                                    </tr>
+                                    </c:if>
+                                    <tr>
+                                        <td></td>
+                                        <td></td>
                                         <td class="text-black font-weight-bold"><strong>Order Total</strong></td>
                                         <td class="text-black font-weight-bold">
-                                            <input name="order-total-price" class="form-control-plaintext h5 text-black"
-                                                   value="${total_price}" style="text-align: center" readonly>
+                                            <input name="order-total-price" class="form-control-plaintext h5 text-black font-weight-bold"
+                                                   value="${not empty sessionScope.checkout_final_total ? sessionScope.checkout_final_total : total_price}"
+                                                   style="text-align: center; color: #1f4d3a;" readonly>
                                         </td>
                                     </tr>
                                     </tbody>
