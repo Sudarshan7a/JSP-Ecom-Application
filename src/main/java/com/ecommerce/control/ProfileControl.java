@@ -23,6 +23,11 @@ public class ProfileControl extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("account") == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
         RequestDispatcher requestDispatcher = request.getRequestDispatcher("profile-page.jsp");
         requestDispatcher.forward(request, response);
     }
@@ -32,7 +37,11 @@ public class ProfileControl extends HttpServlet {
         HttpSession session = request.getSession();
         Account account = (Account) session.getAttribute("account");
 
-        int accountId = account.getId();
+        // Guard: if not logged in, redirect to login
+        if (account == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
         String firstName = request.getParameter("first-name");
         String lastName = request.getParameter("last-name");
         String address = request.getParameter("address");
@@ -54,7 +63,7 @@ public class ProfileControl extends HttpServlet {
             account.setPhone(phone);
             session.setAttribute("account", account);
         } else {
-            accountDao.editProfileInformation(accountId, firstName, lastName, address, email, phone, inputStream);
+            accountDao.editProfileInformation(account.getId(), firstName, lastName, address, email, phone, inputStream);
         }
         
         response.sendRedirect("profile-page");
