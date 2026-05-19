@@ -67,7 +67,14 @@
                                              alt="${product.name}"
                                              onerror="this.src='static/images/puma-rcb-jersey.png';">
                                     </a>
-                                    <span class="badge">Limited</span>
+                                    <c:choose>
+                                        <c:when test="${product.amount <= 0}">
+                                            <span class="badge" style="background:#c62828; color:#fff;">Out of stock</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="badge">Limited</span>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                                 <div class="product-info">
                                     <p class="product-category">
@@ -130,7 +137,27 @@
 <script>
 function sortProducts() {
     const sortValue = document.getElementById('sortSelect').value;
-    console.log('Sort by:', sortValue);
+    const grid = document.querySelector('.product-grid');
+    if (!grid) return;
+    const cards = Array.from(grid.querySelectorAll('.product-card'));
+    if (cards.length === 0) return;
+
+    cards.sort(function(a, b) {
+        const nameA = (a.querySelector('.product-name') || a.querySelector('h3') || {textContent:''}).textContent.trim();
+        const nameB = (b.querySelector('.product-name') || b.querySelector('h3') || {textContent:''}).textContent.trim();
+        const priceA = parseFloat((a.querySelector('.product-price') || {textContent:'0'}).textContent.replace(/[^\d.]/g, '')) || 0;
+        const priceB = parseFloat((b.querySelector('.product-price') || {textContent:'0'}).textContent.replace(/[^\d.]/g, '')) || 0;
+
+        switch (sortValue) {
+            case 'name-asc':  return nameA.localeCompare(nameB);
+            case 'name-desc': return nameB.localeCompare(nameA);
+            case 'price-asc': return priceA - priceB;
+            case 'price-desc': return priceB - priceA;
+            default: return 0; // relevance — original order
+        }
+    });
+
+    cards.forEach(function(card) { grid.appendChild(card); });
 }
 
 // Initialize AOS animation library if available
