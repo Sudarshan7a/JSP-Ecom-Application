@@ -25,6 +25,12 @@ public class RegisterControl extends HttpServlet {
     }
 
     @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Serve the registration form on GET (e.g. direct URL navigation)
+        request.getRequestDispatcher("register.jsp").forward(request, response);
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Get username and password from request.
         String username = request.getParameter("username");
