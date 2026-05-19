@@ -1,6 +1,7 @@
 package com.ecommerce.control;
 
 import com.ecommerce.database.Database;
+import com.ecommerce.entity.ContactMessage;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -11,10 +12,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @WebServlet(name = "ContactControl", value = "/contact")
 public class ContactControl extends HttpServlet {
@@ -48,8 +51,21 @@ public class ContactControl extends HttpServlet {
         System.out.println("  Message: " + message);
         System.out.println("=================================================");
 
-        // Attempt to save to database (non-fatal if table doesn't exist)
-        if (!demoMode()) {
+        if (demoMode()) {
+            // In demo mode, store messages in the application context so contact-management can display them
+            @SuppressWarnings("unchecked")
+            List<ContactMessage> demoMessages = (List<ContactMessage>) getServletContext().getAttribute("demo_contact_messages");
+            if (demoMessages == null) {
+                demoMessages = new ArrayList<>();
+            }
+            ContactMessage cm = new ContactMessage(
+                demoMessages.size() + 1, name, lastName, email, subject, message, new Date()
+            );
+            demoMessages.add(0, cm); // newest first
+            getServletContext().setAttribute("demo_contact_messages", demoMessages);
+            System.out.println("[ContactControl] Demo mode: message stored in application context.");
+        } else {
+            // Attempt to save to database (non-fatal if table doesn't exist)
             try {
                 Database database = new Database();
                 try (Connection conn = database.getConnection()) {
@@ -77,7 +93,6 @@ public class ContactControl extends HttpServlet {
                 }
             } catch (Exception e) {
                 System.err.println("[ContactControl] Could not save to DB: " + e.getMessage());
-                // Non-fatal: message was logged above
             }
         }
 
