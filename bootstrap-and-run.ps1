@@ -76,7 +76,7 @@ function Download-And-Extract {
         Remove-Item $ZipPath -Force
         Write-Host "[+] Successfully set up $Description.`n" -ForegroundColor Green
     } catch {
-        Write-Error "Failed to download or extract $Description. $_"
+        Write-Host "[ERROR] Failed to download or extract $Description. $_" -ForegroundColor Red
         exit 1
     }
     return $TargetDir
@@ -184,6 +184,22 @@ Get-WmiObject Win32_Process -Filter "name='mysqld.exe'" | Where-Object { $_.Comm
     Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
 }
 
+# Patch my.ini to include the correct port so MariaDB binds to it on startup
+$MyIniPath = Join-Path $DbDataDir "my.ini"
+if (Test-Path $MyIniPath) {
+    $MyIniContent = Get-Content $MyIniPath -Raw
+    if ($MyIniContent -notmatch "port\s*=") {
+        # Insert port under [mysqld] section
+        $MyIniContent = $MyIniContent -replace '(\[mysqld\])', "`$1`nport=$($Config.DbPort)"
+        Set-Content -Path $MyIniPath -Value $MyIniContent -NoNewline
+        Write-Host "    -> Patched my.ini with port $($Config.DbPort)." -ForegroundColor Cyan
+    } elseif ($MyIniContent -notmatch "port\s*=\s*$($Config.DbPort)") {
+        $MyIniContent = $MyIniContent -replace 'port\s*=\s*\d+', "port=$($Config.DbPort)"
+        Set-Content -Path $MyIniPath -Value $MyIniContent -NoNewline
+        Write-Host "    -> Updated my.ini port to $($Config.DbPort)." -ForegroundColor Cyan
+    }
+}
+
 # Start Database in background
 Write-Host "    -> Starting Database Server..."
 $MySqlArgs = "--datadir=$DbDataDir", "--port=$($Config.DbPort)", "--console"
@@ -192,17 +208,22 @@ $DbProcess = Start-Process -FilePath $Mysqld -ArgumentList $MySqlArgs -WindowSty
 # Wait for DB to become available
 $DbReady = $false
 $RetryCount = 0
-while (-not $DbReady -and $RetryCount -lt 15) {
+while (-not $DbReady -and $RetryCount -lt 20) {
     Start-Sleep -Seconds 2
     try {
-        & $MysqlClient -u root -P $($Config.DbPort) -e "SELECT 1" 2>$null
+        # -h 127.0.0.1 forces TCP instead of named pipe on Windows
+        & $MysqlClient -u root -h 127.0.0.1 -P $($Config.DbPort) -e "SELECT 1" 2>$null
         if ($LASTEXITCODE -eq 0) { $DbReady = $true }
     } catch { }
     $RetryCount++
+    if ($RetryCount % 5 -eq 0) {
+        Write-Host "    -> Still waiting for database... ($RetryCount/20)" -ForegroundColor Yellow
+    }
 }
 
 if (-not $DbReady) {
-    Write-Error "Database failed to start!"
+    Write-Host "[ERROR] Database failed to start! Check .dev-tools\db-data\*.err for details." -ForegroundColor Red
+    if ($DbProcess -and -not $DbProcess.HasExited) { Stop-Process -Id $DbProcess.Id -Force }
     exit 1
 }
 
@@ -216,9 +237,9 @@ CREATE USER IF NOT EXISTS '$($Config.DbUser)'@'localhost' IDENTIFIED BY '$($Conf
 GRANT ALL PRIVILEGES ON *.* TO '$($Config.DbUser)'@'localhost';
 FLUSH PRIVILEGES;
 "@
-$SqlSetup | & $MysqlClient -u root -P $($Config.DbPort) 2>&1 | Out-Null
+$SqlSetup | & $MysqlClient -u root -h 127.0.0.1 -P $($Config.DbPort) 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Database initialization failed!"
+    Write-Host "[ERROR] Database initialization failed!" -ForegroundColor Red
     Stop-Process -Id $DbProcess.Id -Force
     exit 1
 }
@@ -230,7 +251,7 @@ function Test-CoreTables {
         [string]$DatabaseName
     )
 
-    $Tables = & $MysqlClientPath -u root -P $Port -D $DatabaseName -N -B -e "SELECT table_name FROM information_schema.tables WHERE table_schema = '$DatabaseName' AND table_name IN ('account', 'category', 'product');"
+    $Tables = & $MysqlClientPath -u root -h 127.0.0.1 -P $Port -D $DatabaseName -N -B -e "SELECT table_name FROM information_schema.tables WHERE table_schema = '$DatabaseName' AND table_name IN ('account', 'category', 'product');"
     return ($LASTEXITCODE -eq 0 -and $Tables -match 'account' -and $Tables -match 'category' -and $Tables -match 'product')
 }
 
@@ -252,7 +273,7 @@ if (-not (Test-Path $DumpFile)) {
 } else {
     try {
         # Use cmd /c with input redirection - most reliable way to pipe a file to mysql on Windows
-        $importArgs = "-u root -P $($Config.DbPort) -D `"$($Config.DbName)`""
+        $importArgs = "-u root -h 127.0.0.1 -P $($Config.DbPort) -D `"$($Config.DbName)`""
         cmd /c "`"$MysqlClient`" $importArgs < `"$DumpFile`"" 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Some SQL statements failed during import, but continuing..."
@@ -273,7 +294,7 @@ if (-not (Test-CoreTables -MysqlClientPath $MysqlClient -Port $Config.DbPort -Da
 # Add missing product_image_url column if it doesn't exist
 Write-Host "    -> Ensuring schema is up-to-date..."
 $AlterTableSql = "ALTER TABLE product ADD COLUMN IF NOT EXISTS product_image_url varchar(1000) DEFAULT NULL;"
-$AlterTableSql | & $MysqlClient -u $($Config.DbUser) -p$($Config.DbPass) -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
+$AlterTableSql | & $MysqlClient -u $($Config.DbUser) -p$($Config.DbPass) -h 127.0.0.1 -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
 
 # Add order coupon tracking columns and contact_messages table if they do not exist.
 $OrderSchemaSql = @'
@@ -290,7 +311,7 @@ CREATE TABLE IF NOT EXISTS contact_messages (
     submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 '@
-$OrderSchemaSql | & $MysqlClient -u root -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
+$OrderSchemaSql | & $MysqlClient -u root -h 127.0.0.1 -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
 
 # -----------------------------------------------------------------------------
 # 3. Build the Application
@@ -299,7 +320,7 @@ Write-Host "`n[*] Building Application with Maven..." -ForegroundColor Cyan
 Set-Location $ScriptDir
 & $MvnBin clean package -DskipTests
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Maven build failed!"
+    Write-Host "[ERROR] Maven build failed!" -ForegroundColor Red
     Stop-Process -Id $DbProcess.Id -Force
     exit 1
 }
