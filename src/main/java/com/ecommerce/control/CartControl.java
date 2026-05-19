@@ -22,8 +22,8 @@ public class CartControl extends HttpServlet {
     // Call DAO class to access with database.
     ProductDao productDao = new ProductDao();
 
-    // Method to remove a product from cart.
-    private void removeCartProduct(int productId, Order order, double totalPrice) {
+    // Method to remove a product from cart. Returns the updated total price.
+    private double removeCartProduct(int productId, Order order, double totalPrice) {
         // Get list of products from the existing order.
         List<CartProduct> list = order.getCartProducts();
 
@@ -41,6 +41,7 @@ public class CartControl extends HttpServlet {
                 iterator.remove();
             }
         }
+        return totalPrice;
     }
 
     @Override
@@ -56,7 +57,8 @@ public class CartControl extends HttpServlet {
             }
             double totalPrice = session.getAttribute("total_price") == null ? 0 : (double) session.getAttribute("total_price");
             int productId = Integer.parseInt(request.getParameter("remove-product-id"));
-            removeCartProduct(productId, order, totalPrice);
+            // removeCartProduct now returns the updated total
+            totalPrice = removeCartProduct(productId, order, totalPrice);
             session.setAttribute("order", order);
             session.setAttribute("total_price", totalPrice);
             response.sendRedirect("cart.jsp");

@@ -175,9 +175,13 @@
                                 <div class="col-md-12">
                                     <!-- Submit (not anchor) so hidden fields pass through form POST -->
                                     <button type="submit" class="btn btn-primary btn-lg py-3 btn-block"
-                                            formaction="checkout">
+                                            formaction="checkout"
+                                            ${empty order or empty order.cartProducts ? 'disabled' : ''}>
                                         Proceed To Checkout
                                     </button>
+                                    <c:if test="${empty order or empty order.cartProducts}">
+                                        <small class="text-muted d-block text-center mt-2">Add items to your cart before checking out.</small>
+                                    </c:if>
                                 </div>
                             </div>
                         </div>
