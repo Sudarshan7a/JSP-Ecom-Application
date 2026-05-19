@@ -249,7 +249,7 @@ public class ProductDao {
 
     public void insertProduct(Product product) {
         String query = "INSERT INTO product (product_id, product_name, product_price, product_description, fk_category_id, fk_account_id, product_is_deleted, product_amount, product_image_url) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE product_name=VALUES(product_name), product_price=VALUES(product_price), product_description=VALUES(product_description), product_image_url=VALUES(product_image_url), product_is_deleted=VALUES(product_is_deleted), product_image=NULL";
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE product_name=VALUES(product_name), product_price=VALUES(product_price), product_description=VALUES(product_description), product_image_url=VALUES(product_image_url), product_is_deleted=VALUES(product_is_deleted), product_amount=VALUES(product_amount), fk_category_id=VALUES(fk_category_id), fk_account_id=VALUES(fk_account_id), product_image=NULL";
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = new Database().getConnection();

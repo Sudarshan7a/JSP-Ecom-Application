@@ -45,20 +45,26 @@ public class OrderDao {
         return orderId;
     }
 
-    // Method to insert order detail information.
-    private void createOrderDetail(List<CartProduct> cartProducts) {
+    // Method to insert order detail information and store per-item paid price
+    private void createOrderDetail(List<CartProduct> cartProducts, double discountPercentage) {
         String query = "INSERT INTO order_detail (fk_order_id, fk_product_id, product_quantity, product_price) VALUES (?, ?, ?, ?);";
         // Get latest orderId to insert list of cartProduct to order.
         int orderId = getLastOrderId();
         for (CartProduct cartProduct : cartProducts) {
             productDao.decreaseProductAmount(cartProduct.getProduct().getId(), cartProduct.getQuantity());
             try {
+                double unitPrice = cartProduct.getPrice();
+                if (discountPercentage > 0) {
+                    double factor = (100.0 - discountPercentage) / 100.0;
+                    unitPrice = Math.round(unitPrice * factor * 100.0) / 100.0;
+                }
+
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 preparedStatement = connection.prepareStatement(query);
                 preparedStatement.setInt(1, orderId);
                 preparedStatement.setInt(2, cartProduct.getProduct().getId());
                 preparedStatement.setInt(3, cartProduct.getQuantity());
-                preparedStatement.setDouble(4, cartProduct.getPrice());
+                preparedStatement.setDouble(4, unitPrice);
                 preparedStatement.executeUpdate();
             } catch (SQLException | ClassNotFoundException e) {
                 System.out.println("Create order_detail catch:");
@@ -68,14 +74,17 @@ public class OrderDao {
     }
 
     // Method to insert order information to database.
-    public void createOrder(int accountId, double totalPrice, List<CartProduct> cartProducts) {
-        String query = "INSERT INTO `order` (fk_account_id, order_total) VALUES (?, ?);";
+    public void createOrder(int accountId, double subtotalPrice, double totalPrice, String couponCode, double discountAmount, List<CartProduct> cartProducts) {
+        String query = "INSERT INTO `order` (fk_account_id, order_total, order_subtotal, coupon_code, discount_amount) VALUES (?, ?, ?, ?, ?);";
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = new Database().getConnection();
             preparedStatement = connection.prepareStatement(query);
             preparedStatement.setInt(1, accountId);
             preparedStatement.setDouble(2, totalPrice);
+            preparedStatement.setDouble(3, subtotalPrice);
+            preparedStatement.setString(4, couponCode);
+            preparedStatement.setDouble(5, discountAmount);
             preparedStatement.executeUpdate();
 
         } catch (ClassNotFoundException | SQLException e) {
@@ -83,8 +92,8 @@ public class OrderDao {
             System.out.println(e.getMessage());
         }
 
-        // Call create order detail method.
-        createOrderDetail(cartProducts);
+        // Call create order detail method and pass discount percentage so per-item paid price is stored.
+        createOrderDetail(cartProducts, discountAmount);
     }
 
     // Method to get order detail list of a seller.
@@ -136,18 +145,40 @@ public class OrderDao {
     // Method to get order detail history.
     public List<CartProduct> getOrderDetailHistory(int orderId) {
         List<CartProduct> list = new ArrayList<>();
-        String query = "SELECT * FROM order_detail WHERE fk_order_id = " + orderId;
+        // First, read order-level discount (stored as percentage in discount_amount)
+        double discountPercentage = 0.0;
+        String orderQuery = "SELECT discount_amount FROM `order` WHERE order_id = ?";
+        String detailQuery = "SELECT fk_product_id, product_quantity, product_price FROM order_detail WHERE fk_order_id = ?";
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             connection = new Database().getConnection();
-            preparedStatement = connection.prepareStatement(query);
+
+            // get discount percentage for the order (if any)
+            preparedStatement = connection.prepareStatement(orderQuery);
+            preparedStatement.setInt(1, orderId);
+            resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                discountPercentage = resultSet.getDouble("discount_amount");
+            }
+
+            // now get order details
+            preparedStatement = connection.prepareStatement(detailQuery);
+            preparedStatement.setInt(1, orderId);
             resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
-                Product product = productDao.getProduct(resultSet.getInt(1));
-                int quantity = resultSet.getInt(3);
-                double price = resultSet.getDouble(4);
+                int productId = resultSet.getInt("fk_product_id");
+                int quantity = resultSet.getInt("product_quantity");
+                double unitPrice = resultSet.getDouble("product_price");
 
-                list.add(new CartProduct(product, quantity ,price));
+                // If a percentage discount was applied, compute per-item discounted unit price
+                if (discountPercentage > 0) {
+                    double factor = (100.0 - discountPercentage) / 100.0;
+                    double discounted = Math.round(unitPrice * factor * 100.0) / 100.0;
+                    unitPrice = discounted;
+                }
+
+                Product product = productDao.getProduct(productId);
+                list.add(new CartProduct(product, quantity, unitPrice));
             }
         } catch (ClassNotFoundException | SQLException e) {
             System.out.println("Get order detail catch:");
