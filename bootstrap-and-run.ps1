@@ -172,7 +172,7 @@ $MysqlClient = Join-Path $MariaDbBin "mysql.exe"
 # Initialize DB data directory if missing
 if (-not (Test-Path $DbDataDir)) {
     Write-Host "    -> Initializing fresh database files..."
-    if (Test-Path $MysqlInstallDb -and -not $StartOnly) {
+    if ((Test-Path $MysqlInstallDb) -and (-not $StartOnly)) {
         & $MysqlInstallDb --datadir=$DbDataDir 2>&1 | Out-Null
     } else {
         Ensure-Directory $DbDataDir
@@ -234,17 +234,30 @@ function Test-CoreTables {
     return ($LASTEXITCODE -eq 0 -and $Tables -match 'account' -and $Tables -match 'category' -and $Tables -match 'product')
 }
 
-# Import schema from SQL dump if not already present
-Write-Host "    -> Importing Database Schema (if needed)..."
+# Fix collation in the dump file BEFORE importing - MariaDB doesn't support utf8mb4_0900_ai_ci
 $DumpFile = Join-Path $ScriptDir "Dump20210903.sql"
+if (Test-Path $DumpFile) {
+    if ((Select-String -Path $DumpFile -Pattern "utf8mb4_0900_ai_ci" -Quiet) -eq $true) {
+        Write-Host "    -> Fixing SQL collation compatibility (one-time)..."
+        (Get-Content $DumpFile) -replace 'utf8mb4_0900_ai_ci', 'utf8mb4_unicode_ci' | Set-Content $DumpFile
+    }
+}
+
+# Import schema from SQL dump only if core tables don't already exist
+Write-Host "    -> Importing Database Schema (if needed)..."
 if (-not (Test-Path $DumpFile)) {
     Write-Warning "Database dump file not found: $DumpFile (skipping import)"
+} elseif (Test-CoreTables -MysqlClientPath $MysqlClient -Port $Config.DbPort -DatabaseName $Config.DbName) {
+    Write-Host "[OK] Database schema already present, skipping import." -ForegroundColor Green
 } else {
     try {
-        $SqlContent = Get-Content $DumpFile -Raw
-        $SqlContent | & $MysqlClient -u root -P $($Config.DbPort) 2>&1 | Out-Null
+        # Use cmd /c with input redirection - most reliable way to pipe a file to mysql on Windows
+        $importArgs = "-u root -P $($Config.DbPort) -D `"$($Config.DbName)`""
+        cmd /c "`"$MysqlClient`" $importArgs < `"$DumpFile`"" 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Some SQL statements failed during import, but continuing..."
+        } else {
+            Write-Host "[OK] Database schema imported successfully." -ForegroundColor Green
         }
     } catch {
         Write-Warning "Failed to import database schema: $_ (continuing)"
@@ -255,12 +268,6 @@ if (-not (Test-CoreTables -MysqlClientPath $MysqlClient -Port $Config.DbPort -Da
     Write-Warning "Database core tables not detected; some features may not work until schema is applied."
 } else {
     Write-Host "[OK] Database schema present." -ForegroundColor Green
-}
-
-# Also fix collation in the dump file to be MariaDB compatible (one-time fix)
-if ((Test-Path $DumpFile) -and (Select-String -Path $DumpFile -Pattern "utf8mb4_0900_ai_ci" -Quiet) -eq $true) {
-    Write-Host "    -> Fixing SQL collation compatibility..."
-    (Get-Content $DumpFile) -replace 'utf8mb4_0900_ai_ci', 'utf8mb4_unicode_ci' | Set-Content $DumpFile
 }
 
 # Add missing product_image_url column if it doesn't exist
