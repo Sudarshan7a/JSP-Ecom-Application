@@ -116,18 +116,30 @@ $MvnBin = Join-Path $MavenPath "bin\mvn.cmd"
 $TomcatStart = Join-Path $TomcatPath "bin\startup.bat"
 $TomcatStop = Join-Path $TomcatPath "bin\shutdown.bat"
 
-# Ensure Tomcat will use port 8081 to match README and avoid common port conflicts
+# Ensure Tomcat uses the default HTTP port 8080.
 $ServerXml = Join-Path $TomcatPath "conf\server.xml"
 if (Test-Path $ServerXml) {
     try {
-        (Get-Content $ServerXml) -replace 'port="8080"', 'port="8081"' | Set-Content $ServerXml
-        Write-Host "[OK] Configured Tomcat to use port 8081." -ForegroundColor Green
+        (Get-Content $ServerXml) -replace 'port="8081"', 'port="8080"' | Set-Content $ServerXml
+        Write-Host "[OK] Configured Tomcat to use port 8080." -ForegroundColor Green
     } catch {
-        Write-Warning "Failed to update server.xml to port 8081: $_"
+        Write-Warning "Failed to update server.xml to port 8080: $_"
     }
 } else {
     Write-Warning "Tomcat server.xml not found; Tomcat will keep its default ports."
 }
+
+# Create setenv.bat to persist DB environment variables across Tomcat restarts
+$SetEnvBat = Join-Path $TomcatPath "bin\setenv.bat"
+$SetEnvContent = @"
+@echo off
+REM Database Configuration for JSP E-Commerce App
+set ECOM_DB_USER=$($Config.DbUser)
+set ECOM_DB_PASSWORD=$($Config.DbPass)
+set ECOM_DB_URL=jdbc:mysql://localhost:$($Config.DbPort)/$($Config.DbName)
+"@
+Set-Content -Path $SetEnvBat -Value $SetEnvContent -Force
+Write-Host "[OK] Created Tomcat setenv.bat with database configuration." -ForegroundColor Green
 
 # -----------------------------------------------------------------------------
 # 2. Database Initialization and Startup
@@ -195,6 +207,17 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+function Test-CoreTables {
+    param(
+        [string]$MysqlClientPath,
+        [int]$Port,
+        [string]$DatabaseName
+    )
+
+    $Tables = & $MysqlClientPath -u root -P $Port -D $DatabaseName -N -B -e "SELECT table_name FROM information_schema.tables WHERE table_schema = '$DatabaseName' AND table_name IN ('account', 'category', 'product');"
+    return ($LASTEXITCODE -eq 0 -and $Tables -match 'account' -and $Tables -match 'category' -and $Tables -match 'product')
+}
+
 # Import schema from SQL dump
 Write-Host "    -> Importing Database Schema..."
 $DumpFile = Join-Path $ScriptDir "Dump20210903.sql"
@@ -207,12 +230,18 @@ if (-not (Test-Path $DumpFile)) {
 # Read and execute SQL dump
 try {
     $SqlContent = Get-Content $DumpFile -Raw
-    $SqlContent | & $MysqlClient -u $($Config.DbUser) -p$($Config.DbPass) -P $($Config.DbPort) 2>&1 | Out-Null
+    $SqlContent | & $MysqlClient -u root -P $($Config.DbPort) 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Some SQL statements failed, but continuing..."
     }
 } catch {
     Write-Error "Failed to import database schema: $_"
+    Stop-Process -Id $DbProcess.Id -Force
+    exit 1
+}
+
+if (-not (Test-CoreTables -MysqlClientPath $MysqlClient -Port $Config.DbPort -DatabaseName $Config.DbName)) {
+    Write-Error "Database schema import did not create the core tables."
     Stop-Process -Id $DbProcess.Id -Force
     exit 1
 }
@@ -229,6 +258,23 @@ if ((Select-String -Path $DumpFile -Pattern "utf8mb4_0900_ai_ci" -Quiet) -eq $tr
 Write-Host "    -> Ensuring schema is up-to-date..."
 $AlterTableSql = "ALTER TABLE product ADD COLUMN IF NOT EXISTS product_image_url varchar(1000) DEFAULT NULL;"
 $AlterTableSql | & $MysqlClient -u $($Config.DbUser) -p$($Config.DbPass) -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
+
+# Add order coupon tracking columns if they do not exist.
+$OrderSchemaSql = @'
+ALTER TABLE `order` ADD COLUMN IF NOT EXISTS order_subtotal double DEFAULT NULL;
+ALTER TABLE `order` ADD COLUMN IF NOT EXISTS coupon_code varchar(50) DEFAULT NULL;
+ALTER TABLE `order` ADD COLUMN IF NOT EXISTS discount_amount double DEFAULT NULL;
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    email VARCHAR(150),
+    subject VARCHAR(200),
+    message TEXT,
+    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+'@
+$OrderSchemaSql | & $MysqlClient -u root -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
 
 # -----------------------------------------------------------------------------
 # 3. Build the Application
@@ -269,10 +315,10 @@ Write-Host "[OK] Tomcat is running." -ForegroundColor Green
 # -----------------------------------------------------------------------------
 # 5. Open Browser and Monitor
 # -----------------------------------------------------------------------------
-Start-Process "http://localhost:8081"
+Start-Process "http://localhost:8080"
 
 Write-Host "`n=======================================================" -ForegroundColor Magenta
-Write-Host " Application is live at: http://localhost:8081" -ForegroundColor White
+Write-Host " Application is live at: http://localhost:8080" -ForegroundColor White
 Write-Host " Database is running on port: $($Config.DbPort)" -ForegroundColor White
 Write-Host "=======================================================" -ForegroundColor Magenta
 Write-Host "`nPress Ctrl+C to gracefully shut down the servers and exit." -ForegroundColor Yellow
