@@ -32,18 +32,19 @@
                             <c:if test="${sessionScope.contact_message_sent}">
                                 <div class="alert alert-success mb-4" role="alert">
                                     <h5 class="mb-2">&#10003; Message Received!</h5>
-                                    <p class="mb-1">
-                                        Thank you, <strong>${sessionScope.contact_message_name}</strong>
+                                        <p class="mb-1">
+                                        Thank you, <strong>${sessionScope.contact_message_name} ${sessionScope.contact_message_last_name}</strong>
                                         (<code>${sessionScope.contact_message_email}</code>) — your message has been logged.
                                     </p>
                                     <c:if test="${not empty sessionScope.contact_message_subject}">
                                         <p class="mb-0"><strong>Subject:</strong> ${sessionScope.contact_message_subject}</p>
                                     </c:if>
-                                    <small class="text-muted d-block mt-2">Message saved. Check the server console or contact_messages table for the full submission.</small>
+                                    <small class="text-muted d-block mt-2">Message saved. View it later at /contact-management or in the contact_messages table.</small>
                                 </div>
                                 <%-- Clear flags to avoid showing on next visit --%>
                                 <% session.removeAttribute("contact_message_sent");
                                    session.removeAttribute("contact_message_name");
+                                   session.removeAttribute("contact_message_last_name");
                                    session.removeAttribute("contact_message_email");
                                    session.removeAttribute("contact_message_subject"); %>
                             </c:if>
