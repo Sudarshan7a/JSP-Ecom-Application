@@ -169,60 +169,110 @@ $MysqlInstallDb = Join-Path $MariaDbBin "mysql_install_db.exe"
 $Mysqld = Join-Path $MariaDbBin "mysqld.exe"
 $MysqlClient = Join-Path $MariaDbBin "mysql.exe"
 
-# Initialize DB data directory if missing
-if (-not (Test-Path $DbDataDir)) {
-    Write-Host "    -> Initializing fresh database files..."
-    if ((Test-Path $MysqlInstallDb) -and (-not $StartOnly)) {
-        & $MysqlInstallDb --datadir=$DbDataDir 2>&1 | Out-Null
-    } else {
-        Ensure-Directory $DbDataDir
-    }
-}
+# Write a clean my.ini into db-data (MariaDB reads this when --datadir is set)
+# Also write to bin dir as fallback
+$MyIniPath = Join-Path $MariaDbBin "my.ini"
+$MyIniDataPath = Join-Path $DbDataDir "my.ini"
+$MyIniContent = @"
+[mysqld]
+datadir=$($DbDataDir -replace '\\','/')
+port=$($Config.DbPort)
+bind-address=127.0.0.1
+skip-networking=0
+skip-name-resolve
+[client]
+port=$($Config.DbPort)
+host=127.0.0.1
+plugin-dir=$($MariaDbPath -replace '\\','/')/lib/plugin
+"@
+Set-Content -Path $MyIniPath -Value $MyIniContent -Force
+Set-Content -Path $MyIniDataPath -Value $MyIniContent -Force
+Write-Host "    -> Wrote my.ini with port $($Config.DbPort) and skip-name-resolve." -ForegroundColor Cyan
 
 # Kill any existing mysqld running from our dev-tools
 Get-WmiObject Win32_Process -Filter "name='mysqld.exe'" | Where-Object { $_.CommandLine -match "db-data" } | ForEach-Object {
     Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
 }
+Start-Sleep -Seconds 1
 
-# Patch my.ini to include the correct port so MariaDB binds to it on startup
-$MyIniPath = Join-Path $DbDataDir "my.ini"
-if (Test-Path $MyIniPath) {
-    $MyIniContent = Get-Content $MyIniPath -Raw
-    if ($MyIniContent -notmatch "port\s*=") {
-        # Insert port under [mysqld] section
-        $MyIniContent = $MyIniContent -replace '(\[mysqld\])', "`$1`nport=$($Config.DbPort)"
-        Set-Content -Path $MyIniPath -Value $MyIniContent -NoNewline
-        Write-Host "    -> Patched my.ini with port $($Config.DbPort)." -ForegroundColor Cyan
-    } elseif ($MyIniContent -notmatch "port\s*=\s*$($Config.DbPort)") {
-        $MyIniContent = $MyIniContent -replace 'port\s*=\s*\d+', "port=$($Config.DbPort)"
-        Set-Content -Path $MyIniPath -Value $MyIniContent -NoNewline
-        Write-Host "    -> Updated my.ini port to $($Config.DbPort)." -ForegroundColor Cyan
+# Check if db-data has valid MariaDB system tables (mysql/user.frm or mysql/global_priv.frm)
+$DbInitialized = (Test-Path (Join-Path $DbDataDir "mysql\global_priv.frm")) -or `
+                 (Test-Path (Join-Path $DbDataDir "mysql\user.frm")) -or `
+                 (Test-Path (Join-Path $DbDataDir "mysql\global_priv.MAD"))
+
+if (-not $DbInitialized) {
+    # Wipe any partial/corrupt db-data and reinitialize cleanly
+    if (Test-Path $DbDataDir) {
+        Write-Host "    -> Removing incomplete db-data directory for clean init..." -ForegroundColor Yellow
+        Remove-Item $DbDataDir -Recurse -Force
     }
+    Write-Host "    -> Initializing fresh database files (this takes ~30s)..."
+    Ensure-Directory $DbDataDir
+    # mysql_install_db bootstraps the system grant tables
+    & $MysqlInstallDb --datadir="$DbDataDir" --port=$($Config.DbPort) 2>&1 | Out-Null
+    Write-Host "    -> Database initialized." -ForegroundColor Cyan
+} else {
+    Write-Host "    -> Existing database found, skipping init." -ForegroundColor Cyan
 }
 
-# Start Database in background
+# Start Database — pass --defaults-file explicitly so it reads our my.ini
 Write-Host "    -> Starting Database Server..."
-$MySqlArgs = "--datadir=$DbDataDir", "--port=$($Config.DbPort)", "--console"
+$MySqlArgs = @(
+    "--defaults-file=$MyIniPath",
+    "--datadir=$DbDataDir",
+    "--port=$($Config.DbPort)",
+    "--bind-address=127.0.0.1",
+    "--skip-name-resolve"
+)
 $DbProcess = Start-Process -FilePath $Mysqld -ArgumentList $MySqlArgs -WindowStyle Hidden -PassThru
 
-# Wait for DB to become available
+# Wait for DB to become available — poll the error log for "ready for connections"
 $DbReady = $false
 $RetryCount = 0
-while (-not $DbReady -and $RetryCount -lt 20) {
+$ErrLog = Join-Path $DbDataDir "*.err"
+while (-not $DbReady -and $RetryCount -lt 30) {
     Start-Sleep -Seconds 2
-    try {
-        # -h 127.0.0.1 forces TCP instead of named pipe on Windows
-        & $MysqlClient -u root -h 127.0.0.1 -P $($Config.DbPort) -e "SELECT 1" 2>$null
-        if ($LASTEXITCODE -eq 0) { $DbReady = $true }
-    } catch { }
     $RetryCount++
+
+    # Primary check: try connecting via TCP
+    try {
+        $result = & $MysqlClient -u root -h 127.0.0.1 -P $($Config.DbPort) --connect-timeout=2 -e "SELECT 1;" 2>&1
+        if ($LASTEXITCODE -eq 0) { $DbReady = $true; break }
+    } catch { }
+
+    # Secondary check: look for "ready for connections" in error log
+    $errFiles = Get-Item (Join-Path $DbDataDir "*.err") -ErrorAction SilentlyContinue
+    if ($errFiles) {
+        $lastLines = Get-Content $errFiles[-1].FullName -Tail 5 -ErrorAction SilentlyContinue
+        if ($lastLines -match "ready for connections") { 
+            Start-Sleep -Seconds 1  # brief pause after ready signal
+            $DbReady = $true; break 
+        }
+    }
+
     if ($RetryCount % 5 -eq 0) {
-        Write-Host "    -> Still waiting for database... ($RetryCount/20)" -ForegroundColor Yellow
+        Write-Host "    -> Still waiting for database... ($RetryCount/30)" -ForegroundColor Yellow
+    }
+
+    # If process died, bail early
+    if ($DbProcess.HasExited) {
+        Write-Host "[ERROR] mysqld.exe exited unexpectedly (code $($DbProcess.ExitCode))." -ForegroundColor Red
+        $errFiles = Get-Item (Join-Path $DbDataDir "*.err") -ErrorAction SilentlyContinue
+        if ($errFiles) {
+            Write-Host "--- Last 20 lines of error log ---" -ForegroundColor Yellow
+            Get-Content $errFiles[-1].FullName -Tail 20 | ForEach-Object { Write-Host $_ }
+        }
+        exit 1
     }
 }
 
 if (-not $DbReady) {
-    Write-Host "[ERROR] Database failed to start! Check .dev-tools\db-data\*.err for details." -ForegroundColor Red
+    Write-Host "[ERROR] Database failed to start after 60s." -ForegroundColor Red
+    $errFiles = Get-Item (Join-Path $DbDataDir "*.err") -ErrorAction SilentlyContinue
+    if ($errFiles) {
+        Write-Host "--- Last 20 lines of error log ---" -ForegroundColor Yellow
+        Get-Content $errFiles[-1].FullName -Tail 20 | ForEach-Object { Write-Host $_ }
+    }
     if ($DbProcess -and -not $DbProcess.HasExited) { Stop-Process -Id $DbProcess.Id -Force }
     exit 1
 }
