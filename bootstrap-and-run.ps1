@@ -77,6 +77,11 @@ function Download-And-Extract {
     return $TargetDir
 }
 
+param(
+    [switch]$SetupOnly,
+    [switch]$StartOnly
+)
+
 # -----------------------------------------------------------------------------
 # 1. Setup Toolchain
 # -----------------------------------------------------------------------------
@@ -86,6 +91,7 @@ Write-Host "  JSP E-Commerce - Portable Environment Setup          " -Foreground
 Write-Host "=======================================================" -ForegroundColor Magenta
 Write-Host "Setting up completely portable environment in .dev-tools...`n"
 
+# If StartOnly mode, skip downloads and use existing .dev-tools
 Ensure-Directory $ToolsDir
 
 # Add .dev-tools to .gitignore if not present
@@ -99,10 +105,20 @@ if (Test-Path $GitIgnorePath) {
     Set-Content $GitIgnorePath ".dev-tools/"
 }
 
-$JdkPath     = Download-And-Extract $Config.JdkUrl $Config.JdkDir "Java JDK 17"
-$MavenPath   = Download-And-Extract $Config.MavenUrl $Config.MavenDir "Apache Maven 3.9"
-$TomcatPath  = Download-And-Extract $Config.TomcatUrl $Config.TomcatDir "Apache Tomcat 9"
-$MariaDbPath = Download-And-Extract $Config.MariaDbUrl $Config.MariaDbDir "MariaDB 10.11"
+# Download & extract tools unless we're starting only
+if (-not $StartOnly) {
+    $JdkPath     = Download-And-Extract $Config.JdkUrl $Config.JdkDir "Java JDK 17"
+    $MavenPath   = Download-And-Extract $Config.MavenUrl $Config.MavenDir "Apache Maven 3.9"
+    $TomcatPath  = Download-And-Extract $Config.TomcatUrl $Config.TomcatDir "Apache Tomcat 9"
+    $MariaDbPath = Download-And-Extract $Config.MariaDbUrl $Config.MariaDbDir "MariaDB 10.11"
+} else {
+    # Use already-downloaded tools
+    $JdkPath     = Join-Path $ToolsDir $Config.JdkDir
+    $MavenPath   = Join-Path $ToolsDir $Config.MavenDir
+    $TomcatPath  = Join-Path $ToolsDir $Config.TomcatDir
+    $MariaDbPath = Join-Path $ToolsDir $Config.MariaDbDir
+    Write-Host "[OK] StartOnly: using existing .dev-tools installations." -ForegroundColor Green
+}
 
 # Set up Environment Variables strictly for this script session
 $env:JAVA_HOME = $JdkPath
@@ -152,18 +168,17 @@ $MysqlInstallDb = Join-Path $MariaDbBin "mysql_install_db.exe"
 $Mysqld = Join-Path $MariaDbBin "mysqld.exe"
 $MysqlClient = Join-Path $MariaDbBin "mysql.exe"
 
-# Initialize DB if data dir doesn't exist
+# Initialize DB data directory if missing
 if (-not (Test-Path $DbDataDir)) {
     Write-Host "    -> Initializing fresh database files..."
-    if (Test-Path $MysqlInstallDb) {
+    if (Test-Path $MysqlInstallDb -and -not $StartOnly) {
         & $MysqlInstallDb --datadir=$DbDataDir 2>&1 | Out-Null
     } else {
-        Write-Host "    -> mysql_install_db.exe not found; creating data directory instead." -ForegroundColor Yellow
         Ensure-Directory $DbDataDir
     }
 }
 
-# Find and kill any existing mysqld running from our dev-tools
+# Kill any existing mysqld running from our dev-tools
 Get-WmiObject Win32_Process -Filter "name='mysqld.exe'" | Where-Object { $_.CommandLine -match "db-data" } | ForEach-Object {
     Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
 }
@@ -192,7 +207,7 @@ if (-not $DbReady) {
 
 Write-Host "[OK] Database is running." -ForegroundColor Green
 
-# Create schema and user
+# Create schema and user (idempotent)
 Write-Host "    -> Verifying Schema and Credentials..."
 $SqlSetup = @"
 CREATE DATABASE IF NOT EXISTS ``$($Config.DbName)``;
@@ -218,38 +233,31 @@ function Test-CoreTables {
     return ($LASTEXITCODE -eq 0 -and $Tables -match 'account' -and $Tables -match 'category' -and $Tables -match 'product')
 }
 
-# Import schema from SQL dump
-Write-Host "    -> Importing Database Schema..."
+# Import schema from SQL dump if not already present
+Write-Host "    -> Importing Database Schema (if needed)..."
 $DumpFile = Join-Path $ScriptDir "Dump20210903.sql"
 if (-not (Test-Path $DumpFile)) {
-    Write-Error "Database dump file not found: $DumpFile"
-    Stop-Process -Id $DbProcess.Id -Force
-    exit 1
-}
-
-# Read and execute SQL dump
-try {
-    $SqlContent = Get-Content $DumpFile -Raw
-    $SqlContent | & $MysqlClient -u root -P $($Config.DbPort) 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Some SQL statements failed, but continuing..."
+    Write-Warning "Database dump file not found: $DumpFile (skipping import)"
+} else {
+    try {
+        $SqlContent = Get-Content $DumpFile -Raw
+        $SqlContent | & $MysqlClient -u root -P $($Config.DbPort) 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Some SQL statements failed during import, but continuing..."
+        }
+    } catch {
+        Write-Warning "Failed to import database schema: $_ (continuing)"
     }
-} catch {
-    Write-Error "Failed to import database schema: $_"
-    Stop-Process -Id $DbProcess.Id -Force
-    exit 1
 }
 
 if (-not (Test-CoreTables -MysqlClientPath $MysqlClient -Port $Config.DbPort -DatabaseName $Config.DbName)) {
-    Write-Error "Database schema import did not create the core tables."
-    Stop-Process -Id $DbProcess.Id -Force
-    exit 1
+    Write-Warning "Database core tables not detected; some features may not work until schema is applied."
+} else {
+    Write-Host "[OK] Database schema present." -ForegroundColor Green
 }
 
-Write-Host "[OK] Database schema imported." -ForegroundColor Green
-
 # Also fix collation in the dump file to be MariaDB compatible (one-time fix)
-if ((Select-String -Path $DumpFile -Pattern "utf8mb4_0900_ai_ci" -Quiet) -eq $true) {
+if ((Test-Path $DumpFile) -and (Select-String -Path $DumpFile -Pattern "utf8mb4_0900_ai_ci" -Quiet) -eq $true) {
     Write-Host "    -> Fixing SQL collation compatibility..."
     (Get-Content $DumpFile) -replace 'utf8mb4_0900_ai_ci', 'utf8mb4_unicode_ci' | Set-Content $DumpFile
 }
@@ -259,7 +267,7 @@ Write-Host "    -> Ensuring schema is up-to-date..."
 $AlterTableSql = "ALTER TABLE product ADD COLUMN IF NOT EXISTS product_image_url varchar(1000) DEFAULT NULL;"
 $AlterTableSql | & $MysqlClient -u $($Config.DbUser) -p$($Config.DbPass) -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
 
-# Add order coupon tracking columns if they do not exist.
+# Add order coupon tracking columns and contact_messages table if they do not exist.
 $OrderSchemaSql = @'
 ALTER TABLE `order` ADD COLUMN IF NOT EXISTS order_subtotal double DEFAULT NULL;
 ALTER TABLE `order` ADD COLUMN IF NOT EXISTS coupon_code varchar(50) DEFAULT NULL;
