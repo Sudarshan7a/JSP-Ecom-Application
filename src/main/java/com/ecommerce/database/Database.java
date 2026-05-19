@@ -6,6 +6,15 @@ import java.sql.SQLException;
 
 public class Database {
     private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/jsp-servlet-ecommerce-website";
+    private static final String DRIVER_CLASS = "com.mysql.cj.jdbc.Driver";
+
+    private void ensureDriverLoaded() throws SQLException {
+        try {
+            Class.forName(DRIVER_CLASS);
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("MySQL JDBC driver is not available on the classpath.", e);
+        }
+    }
 
     public static boolean hasConfiguredCredentials() {
         String user = System.getenv("ECOM_DB_USER");
@@ -36,6 +45,8 @@ public class Database {
         String url = getEnvOrProperty("ECOM_DB_URL", "ecom.db.url", DEFAULT_URL);
         String user = getEnvOrProperty("ECOM_DB_USER", "ecom.db.user", null);
         String password = getEnvOrProperty("ECOM_DB_PASSWORD", "ecom.db.password", null);
+
+        ensureDriverLoaded();
 
         if (user == null && password == null) {
             throw new SQLException("Missing DB user and password. Set ECOM_DB_USER/ECOM_DB_PASSWORD env vars or ecom.db.user/ecom.db.password JVM properties.");
