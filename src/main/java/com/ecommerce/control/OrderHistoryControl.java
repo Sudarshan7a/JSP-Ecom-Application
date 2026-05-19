@@ -44,10 +44,10 @@ public class OrderHistoryControl extends HttpServlet {
                 orderList = DemoStore.createOrders();
             }
         } else {
-            // In DB mode, query from database
+            // In DB mode, query from database — show empty state for new users, no fake data
             orderList = orderDao.getOrderHistory(account.getId());
-            if (orderList == null || orderList.isEmpty()) {
-                orderList = DemoStore.createOrders();
+            if (orderList == null) {
+                orderList = new java.util.ArrayList<>();
             }
         }
 

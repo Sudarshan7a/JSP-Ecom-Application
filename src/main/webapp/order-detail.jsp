@@ -34,7 +34,7 @@
                         <table class="table table-bordered">
                             <thead>
                             <tr>
-                                <th>Product ID</th>
+                                <th>Product</th>
                                 <th>Quantity</th>
                                 <th>Price (INR)</th>
                                 <th>Total</th>
@@ -43,7 +43,11 @@
                             <tbody>
                             <c:forEach items="${order_detail_list}" var="o">
                                 <tr>
-                                    <td>${o.product.id}</td>
+                                    <td>
+                                        <a href="${pageContext.request.contextPath}/product-detail?id=${o.product.id}">
+                                            ${o.product.name}
+                                        </a>
+                                    </td>
 
                                     <td>${o.quantity}</td>
 
