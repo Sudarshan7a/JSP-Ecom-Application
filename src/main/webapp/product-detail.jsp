@@ -34,35 +34,48 @@
 
                     <p><strong class="product-price">₹${product.price}</strong></p>
 
-                    <form action="${pageContext.request.contextPath}/cart" method="get">
-                        <div class="mb-3">
-                            <div class="input-group mb-3" style="max-width: 200px;">
-                                <input name="product-id" value="${product.id}" type="hidden">
-
-                                <div class="input-group-prepend">
-                                    <button class="btn btn-outline-primary js-btn-minus" type="button">&minus;</button>
+                    <c:choose>
+                        <c:when test="${product.amount <= 0}">
+                            <div class="alert alert-danger d-flex align-items-center justify-content-between mb-3" role="alert" style="gap: 12px;">
+                                <div>
+                                    <strong>Out of stock.</strong> This item is currently unavailable.
                                 </div>
-
-                                <input id="quantity" name="quantity" type="text" class="form-control text-center"
-                                       value="1" placeholder="" aria-label="Example text with button addon"
-                                       aria-describedby="button-addon1" style="max-width: 50px">
-
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-primary js-btn-plus" type="button">&plus;</button>
-                                </div>
-
-                                <label for="quantity" class="form-label text-black">
-                                    Available products: ${product.amount}
-                                </label>
+                                <span class="badge badge-light" style="padding: 8px 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;">Unavailable</span>
                             </div>
-                        </div>
+                            <p class="text-muted mb-4">Check back later or browse similar items in the featured products below.</p>
+                        </c:when>
+                        <c:otherwise>
+                            <form action="${pageContext.request.contextPath}/cart" method="get">
+                                <div class="mb-3">
+                                    <div class="input-group mb-3" style="max-width: 200px;">
+                                        <input name="product-id" value="${product.id}" type="hidden">
 
-                        <p>
-                            <button type="submit" class="buy-now btn btn-sm btn-primary" ${disabled}>
-                                Add To Cart
-                            </button>
-                        </p>
-                    </form>
+                                        <div class="input-group-prepend">
+                                            <button class="btn btn-outline-primary js-btn-minus" type="button">&minus;</button>
+                                        </div>
+
+                                        <input id="quantity" name="quantity" type="text" class="form-control text-center"
+                                               value="1" placeholder="" aria-label="Example text with button addon"
+                                               aria-describedby="button-addon1" style="max-width: 50px">
+
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-primary js-btn-plus" type="button">&plus;</button>
+                                        </div>
+
+                                        <label for="quantity" class="form-label text-black">
+                                            Available products: ${product.amount}
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <p>
+                                    <button type="submit" class="buy-now btn btn-sm btn-primary" ${disabled}>
+                                        Add To Cart
+                                    </button>
+                                </p>
+                            </form>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
             </div>
 

@@ -69,11 +69,20 @@
                         <c:forEach items="${product_list}" var="product" varStatus="status">
                             <div class="product-card" data-aos="fade-up">
                                 <div class="product-image">
-                                    <img src="${product.imageSource}" 
-                                         alt="${product.name}"
-                                         onerror="this.src='static/images/puma-rcb-jersey.png';">
-                                    <span class="badge">Limited</span>
-                                </div>
+                                        <a href="product-detail?id=${product.id}">
+                                            <img src="${product.imageSource}" 
+                                                 alt="${product.name}"
+                                                 onerror="this.src='static/images/puma-rcb-jersey.png';">
+                                        </a>
+                                        <c:choose>
+                                            <c:when test="${product.amount <= 0}">
+                                                <span class="badge" style="background:#c62828; color:#fff;">Out of stock</span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="badge">Limited</span>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </div>
                                 <div class="product-info">
                                     <p class="product-category">
                                         <c:if test="${product.category != null}">
@@ -83,11 +92,16 @@
                                             Premium
                                         </c:if>
                                     </p>
-                                    <h3 class="product-name">${product.name}</h3>
+                                    <h3 class="product-name"><a href="product-detail?id=${product.id}">${product.name}</a></h3>
                                     <p class="product-description">${product.description}</p>
                                     <div class="product-footer">
                                         <div class="product-price">₹${product.price}</div>
-                                        <a href="product-detail?id=${product.id}" class="product-btn">View</a>
+                                        <a href="product-detail?id=${product.id}" class="product-btn">
+                                            <c:choose>
+                                                <c:when test="${product.amount <= 0}">View</c:when>
+                                                <c:otherwise>View</c:otherwise>
+                                            </c:choose>
+                                        </a>
                                     </div>
                                 </div>
                             </div>

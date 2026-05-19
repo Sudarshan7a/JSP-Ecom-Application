@@ -62,9 +62,11 @@
                         <c:forEach items="${product_list}" var="product" varStatus="status">
                             <div class="product-card" data-aos="fade-up">
                                 <div class="product-image">
-                                    <img src="${product.imageSource}" 
-                                         alt="${product.name}"
-                                         onerror="this.src='static/images/puma-rcb-jersey.png';">
+                                    <a href="product-detail?id=${product.id}">
+                                        <img src="${product.imageSource}" 
+                                             alt="${product.name}"
+                                             onerror="this.src='static/images/puma-rcb-jersey.png';">
+                                    </a>
                                     <span class="badge">Limited</span>
                                 </div>
                                 <div class="product-info">
@@ -76,7 +78,7 @@
                                             Premium
                                         </c:if>
                                     </p>
-                                    <h3 class="product-name">${product.name}</h3>
+                                    <h3 class="product-name"><a href="product-detail?id=${product.id}">${product.name}</a></h3>
                                     <p class="product-description">${product.description}</p>
                                     <div class="product-footer">
                                         <div class="product-price">₹${product.price}</div>
