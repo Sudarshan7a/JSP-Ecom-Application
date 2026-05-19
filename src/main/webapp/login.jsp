@@ -26,7 +26,7 @@
                 <p class="auth-note" style="font-size: 14px; margin-bottom: 20px;">Enter your credentials to access your account.</p>
 
                 <div class="alert alert-info mb-3" style="font-size: 13px; padding: 10px 14px; border-radius: 10px;">
-                    Demo: <strong>demo</strong> / <strong>demo123</strong>
+                    Sign in with your registered account to continue.
                 </div>
 
                 <form action="login?status=typed" method="post" class="auth-form">

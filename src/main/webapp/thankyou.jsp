@@ -1,4 +1,5 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <% response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); %>
 
@@ -69,11 +70,17 @@
                                     </tbody>
                                 </table>
 
+                                <c:if test="${not empty sessionScope.placed_order_coupon_code}">
+                                    <div class="alert alert-success mb-4">
+                                        Coupon <strong>${sessionScope.placed_order_coupon_code}</strong> applied.
+                                        You saved &#8377;<fmt:formatNumber value="${sessionScope.placed_order_discount}" type="number" maxFractionDigits="2"/>.
+                                    </div>
+                                </c:if>
+
                                 <div class="d-flex justify-content-between align-items-center py-3 border-top">
                                     <span class="h5 text-black mb-0 font-weight-bold">Total Charged</span>
                                     <span class="h4 font-weight-bold" style="color: #1f4d3a;">
-                                        &#8377;<fmt:formatNumber value="${sessionScope.placed_order_total}" type="number" maxFractionDigits="2"
-                                            xmlns:fmt="http://java.sun.com/jsp/jstl/fmt"/>
+                                        &#8377;<fmt:formatNumber value="${sessionScope.placed_order_total}" type="number" maxFractionDigits="2"/>
                                     </span>
                                 </div>
                             </c:when>
