@@ -21,6 +21,8 @@ $ErrorActionPreference = "Continue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $ToolsDir = Join-Path $ScriptDir ".dev-tools"
+$script:TranscriptStarted = $false
+$script:LogFile = $null
 
 # -----------------------------------------------------------------------------
 # Configuration & URLs
@@ -58,6 +60,15 @@ function Ensure-Directory {
     }
 }
 
+function Stop-Logging {
+    if ($script:TranscriptStarted) {
+        try {
+            Stop-Transcript | Out-Null
+        } catch { }
+        $script:TranscriptStarted = $false
+    }
+}
+
 function Download-And-Extract {
     param(
         [string]$Url,
@@ -81,9 +92,26 @@ function Download-And-Extract {
         Write-Host "[+] Successfully set up $Description.`n" -ForegroundColor Green
     } catch {
         Write-Host "[ERROR] Failed to download or extract $Description. $_" -ForegroundColor Red
+        Stop-Logging
         exit 1
     }
     return $TargetDir
+}
+
+# -----------------------------------------------------------------------------
+# Logging
+# -----------------------------------------------------------------------------
+$LogDir = Join-Path $ToolsDir "logs"
+Ensure-Directory $LogDir
+$script:LogFile = Join-Path $LogDir ("setup-" + (Get-Date -Format "yyyyMMdd-HHmmss") + ".log")
+try {
+    Start-Transcript -Path $script:LogFile -Force | Out-Null
+    $script:TranscriptStarted = $true
+} catch {
+    Write-Warning "Failed to start transcript logging: $_"
+}
+if ($script:TranscriptStarted) {
+    Write-Host "[OK] Logging to $script:LogFile" -ForegroundColor Green
 }
 
 function Resolve-MySqlClient {
@@ -202,6 +230,7 @@ if ($Config.UseSystemMySql) {
     $MysqlClient = Resolve-MySqlClient
     if (-not $MysqlClient) {
         Write-Host "[ERROR] mysql.exe not found. Install MySQL 8.0 or add it to PATH." -ForegroundColor Red
+        Stop-Logging
         exit 1
     }
 
@@ -212,6 +241,7 @@ if ($Config.UseSystemMySql) {
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[ERROR] Could not connect to MySQL at $DbHost:$DbPort with user $($Config.DbAdminUser)." -ForegroundColor Red
         Write-Host "        Verify the service is running and credentials are correct." -ForegroundColor Yellow
+        Stop-Logging
         exit 1
     }
 
@@ -275,6 +305,7 @@ plugin-dir="$($MariaDbPath -replace '\\','/')/lib/plugin"
         if (-not (Test-Path (Join-Path $DbDataDir "ibdata1")) -and -not (Test-Path (Join-Path $DbDataDir "mysql"))) {
             Write-Host "[ERROR] Database initialization did not create expected files." -ForegroundColor Red
             Write-Host "        Check write permissions or path quoting in $DbDataDir" -ForegroundColor Yellow
+            Stop-Logging
             exit 1
         }
         Write-Host "    -> Database initialized." -ForegroundColor Cyan
@@ -330,6 +361,7 @@ plugin-dir="$($MariaDbPath -replace '\\','/')/lib/plugin"
                 Write-Host "--- Last 20 lines of error log ---" -ForegroundColor Yellow
                 Get-Content $errFiles[-1].FullName -Tail 20 | ForEach-Object { Write-Host $_ }
             }
+            Stop-Logging
             exit 1
         }
     }
@@ -342,6 +374,7 @@ plugin-dir="$($MariaDbPath -replace '\\','/')/lib/plugin"
             Get-Content $errFiles[-1].FullName -Tail 20 | ForEach-Object { Write-Host $_ }
         }
         if ($DbProcess -and -not $DbProcess.HasExited) { Stop-Process -Id $DbProcess.Id -Force }
+        Stop-Logging
         exit 1
     }
 
@@ -360,6 +393,7 @@ $SqlSetup | & $MysqlClient -u $($Config.DbAdminUser) -p$($Config.DbAdminPass) -h
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Database initialization failed!" -ForegroundColor Red
     if ($DbProcess -and -not $DbProcess.HasExited) { Stop-Process -Id $DbProcess.Id -Force }
+    Stop-Logging
     exit 1
 }
 
@@ -441,6 +475,7 @@ Set-Location $ScriptDir
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Maven build failed!" -ForegroundColor Red
     if ($DbProcess -and -not $DbProcess.HasExited) { Stop-Process -Id $DbProcess.Id -Force }
+    Stop-Logging
     exit 1
 }
 Write-Host "[OK] Build successful." -ForegroundColor Green
@@ -493,4 +528,5 @@ try {
     }
     
     Write-Host "[OK] All portable services stopped gracefully." -ForegroundColor Green
+    Stop-Logging
 }
