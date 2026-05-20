@@ -178,7 +178,7 @@ $MyIniPath = Join-Path $MariaDbBin "my.ini"
 $MyIniDataPath = Join-Path $DbDataDir "my.ini"
 $MyIniContent = @"
 [mysqld]
-datadir=$($DbDataDir -replace '\\','/')
+datadir="$($DbDataDir -replace '\\','/')"
 port=$($Config.DbPort)
 bind-address=127.0.0.1
 skip-networking=0
@@ -186,7 +186,7 @@ skip-name-resolve
 [client]
 port=$($Config.DbPort)
 host=127.0.0.1
-plugin-dir=$($MariaDbPath -replace '\\','/')/lib/plugin
+plugin-dir="$($MariaDbPath -replace '\\','/')/lib/plugin"
 "@
 Set-Content -Path $MyIniPath -Value $MyIniContent -Force
 Set-Content -Path $MyIniDataPath -Value $MyIniContent -Force
@@ -215,7 +215,12 @@ if (-not $DbInitialized) {
     # Write my.ini into the fresh db-data dir before init
     Set-Content -Path (Join-Path $DbDataDir "my.ini") -Value $MyIniContent -Force
     # mysql_install_db bootstraps the system grant tables
-    & $MysqlInstallDb --datadir="$DbDataDir" --port=$($Config.DbPort) 2>&1 | Out-Null
+    & $MysqlInstallDb --datadir="$DbDataDir" --basedir="$MariaDbPath" --port=$($Config.DbPort) 2>&1 | Out-Null
+    if (-not (Test-Path (Join-Path $DbDataDir "ibdata1")) -and -not (Test-Path (Join-Path $DbDataDir "mysql"))) {
+        Write-Host "[ERROR] Database initialization did not create expected files." -ForegroundColor Red
+        Write-Host "        Check write permissions or path quoting in $DbDataDir" -ForegroundColor Yellow
+        exit 1
+    }
     Write-Host "    -> Database initialized." -ForegroundColor Cyan
 } else {
     Write-Host "    -> Existing database found, skipping init." -ForegroundColor Cyan
@@ -224,11 +229,12 @@ if (-not $DbInitialized) {
 # Start Database — pass --defaults-file explicitly so it reads our my.ini
 Write-Host "    -> Starting Database Server..."
 $MySqlArgs = @(
-    "--defaults-file=$MyIniPath",
-    "--datadir=$DbDataDir",
+    "--defaults-file=`"$MyIniPath`"",
+    "--datadir=`"$DbDataDir`"",
     "--port=$($Config.DbPort)",
     "--bind-address=127.0.0.1",
-    "--skip-name-resolve"
+    "--skip-name-resolve",
+    "--log-error=`"$($DbDataDir -replace '\\','/')/mariadb.err`""
 )
 $DbProcess = Start-Process -FilePath $Mysqld -ArgumentList $MySqlArgs -WindowStyle Hidden -PassThru
 
