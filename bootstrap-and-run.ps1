@@ -169,6 +169,9 @@ $MysqlInstallDb = Join-Path $MariaDbBin "mysql_install_db.exe"
 $Mysqld = Join-Path $MariaDbBin "mysqld.exe"
 $MysqlClient = Join-Path $MariaDbBin "mysql.exe"
 
+# Ensure db-data exists before writing config files
+Ensure-Directory $DbDataDir
+
 # Write a clean my.ini into db-data (MariaDB reads this when --datadir is set)
 # Also write to bin dir as fallback
 $MyIniPath = Join-Path $MariaDbBin "my.ini"
