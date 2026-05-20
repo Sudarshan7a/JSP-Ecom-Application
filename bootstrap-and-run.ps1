@@ -38,10 +38,14 @@ $Config = @{
     MariaDbUrl = "https://archive.mariadb.org/mariadb-10.11.8/winx64-packages/mariadb-10.11.8-winx64.zip"
     MariaDbDir = "mariadb-10.11.8-winx64"
     
-    DbPort     = 33306
+    UseSystemMySql = $true
+    DbHost     = "127.0.0.1"
+    DbPort     = 3306
     DbName     = "jsp-servlet-ecommerce-website"
     DbUser     = "sudupa"
     DbPass     = "root"
+    DbAdminUser = "sudupa"
+    DbAdminPass = "root"
 }
 
 # -----------------------------------------------------------------------------
@@ -82,6 +86,30 @@ function Download-And-Extract {
     return $TargetDir
 }
 
+function Resolve-MySqlClient {
+    $Candidates = @(
+        "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe",
+        "C:\Program Files\MySQL\MySQL Server 8.1\bin\mysql.exe",
+        "C:\Program Files\MySQL\MySQL Server 8.2\bin\mysql.exe",
+        "C:\Program Files\MySQL\MySQL Server 8.3\bin\mysql.exe",
+        "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe",
+        "C:\Program Files (x86)\MySQL\MySQL Server 8.0\bin\mysql.exe"
+    )
+
+    foreach ($Candidate in $Candidates) {
+        if (Test-Path $Candidate) {
+            return $Candidate
+        }
+    }
+
+    $FromPath = Get-Command mysql.exe -ErrorAction SilentlyContinue
+    if ($FromPath) {
+        return $FromPath.Source
+    }
+
+    return $null
+}
+
 
 # -----------------------------------------------------------------------------
 # 1. Setup Toolchain
@@ -111,13 +139,17 @@ if (-not $StartOnly) {
     $JdkPath     = Download-And-Extract $Config.JdkUrl $Config.JdkDir "Java JDK 17"
     $MavenPath   = Download-And-Extract $Config.MavenUrl $Config.MavenDir "Apache Maven 3.9"
     $TomcatPath  = Download-And-Extract $Config.TomcatUrl $Config.TomcatDir "Apache Tomcat 9"
-    $MariaDbPath = Download-And-Extract $Config.MariaDbUrl $Config.MariaDbDir "MariaDB 10.11"
+    if (-not $Config.UseSystemMySql) {
+        $MariaDbPath = Download-And-Extract $Config.MariaDbUrl $Config.MariaDbDir "MariaDB 10.11"
+    }
 } else {
     # Use already-downloaded tools
     $JdkPath     = Join-Path $ToolsDir $Config.JdkDir
     $MavenPath   = Join-Path $ToolsDir $Config.MavenDir
     $TomcatPath  = Join-Path $ToolsDir $Config.TomcatDir
-    $MariaDbPath = Join-Path $ToolsDir $Config.MariaDbDir
+    if (-not $Config.UseSystemMySql) {
+        $MariaDbPath = Join-Path $ToolsDir $Config.MariaDbDir
+    }
     Write-Host "[OK] StartOnly: using existing .dev-tools installations." -ForegroundColor Green
 }
 
@@ -127,7 +159,7 @@ $env:M2_HOME = $MavenPath
 $env:CATALINA_HOME = $TomcatPath
 $env:ECOM_DB_USER = $Config.DbUser
 $env:ECOM_DB_PASSWORD = $Config.DbPass
-$env:ECOM_DB_URL = "jdbc:mysql://localhost:$($Config.DbPort)/$($Config.DbName)"
+$env:ECOM_DB_URL = "jdbc:mysql://$($Config.DbHost):$($Config.DbPort)/$($Config.DbName)"
 
 $MvnBin = Join-Path $MavenPath "bin\mvn.cmd"
 $TomcatStart = Join-Path $TomcatPath "bin\startup.bat"
@@ -153,7 +185,7 @@ $SetEnvContent = @"
 REM Database Configuration for JSP E-Commerce App
 set ECOM_DB_USER=$($Config.DbUser)
 set ECOM_DB_PASSWORD=$($Config.DbPass)
-set ECOM_DB_URL=jdbc:mysql://localhost:$($Config.DbPort)/$($Config.DbName)
+set ECOM_DB_URL=jdbc:mysql://$($Config.DbHost):$($Config.DbPort)/$($Config.DbName)
 "@
 Set-Content -Path $SetEnvBat -Value $SetEnvContent -Force
 Write-Host "[OK] Created Tomcat setenv.bat with database configuration." -ForegroundColor Green
@@ -161,135 +193,160 @@ Write-Host "[OK] Created Tomcat setenv.bat with database configuration." -Foregr
 # -----------------------------------------------------------------------------
 # 2. Database Initialization and Startup
 # -----------------------------------------------------------------------------
-Write-Host "`n[*] Configuring Portable Database (MariaDB on port $($Config.DbPort))..." -ForegroundColor Cyan
+$DbProcess = $null
+$DbHost = $Config.DbHost
+$DbPort = $Config.DbPort
 
-$DbDataDir = Join-Path $ToolsDir "db-data"
-$MariaDbBin = Join-Path $MariaDbPath "bin"
-$MysqlInstallDb = Join-Path $MariaDbBin "mysql_install_db.exe"
-$Mysqld = Join-Path $MariaDbBin "mysqld.exe"
-$MysqlClient = Join-Path $MariaDbBin "mysql.exe"
+if ($Config.UseSystemMySql) {
+    Write-Host "`n[*] Using system MySQL 8.0 (expects service already running on $DbHost:$DbPort)..." -ForegroundColor Cyan
+    $MysqlClient = Resolve-MySqlClient
+    if (-not $MysqlClient) {
+        Write-Host "[ERROR] mysql.exe not found. Install MySQL 8.0 or add it to PATH." -ForegroundColor Red
+        exit 1
+    }
 
-# Ensure db-data exists before writing config files
-Ensure-Directory $DbDataDir
+    try {
+        $result = & $MysqlClient -u $($Config.DbAdminUser) -p$($Config.DbAdminPass) -h $DbHost -P $DbPort --connect-timeout=2 -e "SELECT 1;" 2>&1
+    } catch { }
 
-# Write a clean my.ini into db-data (MariaDB reads this when --datadir is set)
-# Also write to bin dir as fallback
-$MyIniPath = Join-Path $MariaDbBin "my.ini"
-$MyIniDataPath = Join-Path $DbDataDir "my.ini"
-$MyIniContent = @"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "[ERROR] Could not connect to MySQL at $DbHost:$DbPort with user $($Config.DbAdminUser)." -ForegroundColor Red
+        Write-Host "        Verify the service is running and credentials are correct." -ForegroundColor Yellow
+        exit 1
+    }
+
+    Write-Host "[OK] MySQL is reachable." -ForegroundColor Green
+} else {
+    Write-Host "`n[*] Configuring Portable Database (MariaDB on port $DbPort)..." -ForegroundColor Cyan
+
+    $DbDataDir = Join-Path $ToolsDir "db-data"
+    $MariaDbBin = Join-Path $MariaDbPath "bin"
+    $MysqlInstallDb = Join-Path $MariaDbBin "mysql_install_db.exe"
+    $Mysqld = Join-Path $MariaDbBin "mysqld.exe"
+    $MysqlClient = Join-Path $MariaDbBin "mysql.exe"
+
+    # Ensure db-data exists before writing config files
+    Ensure-Directory $DbDataDir
+
+    # Write a clean my.ini into db-data (MariaDB reads this when --datadir is set)
+    # Also write to bin dir as fallback
+    $MyIniPath = Join-Path $MariaDbBin "my.ini"
+    $MyIniDataPath = Join-Path $DbDataDir "my.ini"
+    $MyIniContent = @"
 [mysqld]
 datadir="$($DbDataDir -replace '\\','/')"
-port=$($Config.DbPort)
-bind-address=127.0.0.1
+port=$DbPort
+bind-address=$DbHost
 skip-networking=0
 skip-name-resolve
 [client]
-port=$($Config.DbPort)
-host=127.0.0.1
+port=$DbPort
+host=$DbHost
 plugin-dir="$($MariaDbPath -replace '\\','/')/lib/plugin"
 "@
-Set-Content -Path $MyIniPath -Value $MyIniContent -Force
-Set-Content -Path $MyIniDataPath -Value $MyIniContent -Force
-Write-Host "    -> Wrote my.ini with port $($Config.DbPort) and skip-name-resolve." -ForegroundColor Cyan
+    Set-Content -Path $MyIniPath -Value $MyIniContent -Force
+    Set-Content -Path $MyIniDataPath -Value $MyIniContent -Force
+    Write-Host "    -> Wrote my.ini with port $DbPort and skip-name-resolve." -ForegroundColor Cyan
 
-# Kill any existing mysqld running from our dev-tools
-Get-WmiObject Win32_Process -Filter "name='mysqld.exe'" | Where-Object { $_.CommandLine -match "db-data" } | ForEach-Object {
-    Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
-}
-Start-Sleep -Seconds 1
-
-# Check if db-data has valid MariaDB system tables AND matching InnoDB files
-# We check ibdata1 exists AND mysql system tables exist — both must be present
-$DbInitialized = ((Test-Path (Join-Path $DbDataDir "mysql\global_priv.frm")) -or `
-                  (Test-Path (Join-Path $DbDataDir "mysql\global_priv.MAD"))) -and `
-                 (Test-Path (Join-Path $DbDataDir "ibdata1"))
-
-if (-not $DbInitialized) {
-    # Wipe any partial/corrupt db-data and reinitialize cleanly
-    if (Test-Path $DbDataDir) {
-        Write-Host "    -> Removing incomplete/corrupt db-data directory for clean init..." -ForegroundColor Yellow
-        Remove-Item $DbDataDir -Recurse -Force
+    # Kill any existing mysqld running from our dev-tools
+    Get-WmiObject Win32_Process -Filter "name='mysqld.exe'" | Where-Object { $_.CommandLine -match "db-data" } | ForEach-Object {
+        Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
     }
-    Write-Host "    -> Initializing fresh database files (this takes ~30s)..."
-    Ensure-Directory $DbDataDir
-    # Write my.ini into the fresh db-data dir before init
-    Set-Content -Path (Join-Path $DbDataDir "my.ini") -Value $MyIniContent -Force
-    # mysql_install_db bootstraps the system grant tables
-    & $MysqlInstallDb --datadir="$DbDataDir" --basedir="$MariaDbPath" --port=$($Config.DbPort) 2>&1 | Out-Null
-    if (-not (Test-Path (Join-Path $DbDataDir "ibdata1")) -and -not (Test-Path (Join-Path $DbDataDir "mysql"))) {
-        Write-Host "[ERROR] Database initialization did not create expected files." -ForegroundColor Red
-        Write-Host "        Check write permissions or path quoting in $DbDataDir" -ForegroundColor Yellow
-        exit 1
+    Start-Sleep -Seconds 1
+
+    # Check if db-data has valid MariaDB system tables AND matching InnoDB files
+    # We check ibdata1 exists AND mysql system tables exist — both must be present
+    $DbInitialized = ((Test-Path (Join-Path $DbDataDir "mysql\global_priv.frm")) -or `
+                      (Test-Path (Join-Path $DbDataDir "mysql\global_priv.MAD"))) -and `
+                     (Test-Path (Join-Path $DbDataDir "ibdata1"))
+
+    if (-not $DbInitialized) {
+        # Wipe any partial/corrupt db-data and reinitialize cleanly
+        if (Test-Path $DbDataDir) {
+            Write-Host "    -> Removing incomplete/corrupt db-data directory for clean init..." -ForegroundColor Yellow
+            Remove-Item $DbDataDir -Recurse -Force
+        }
+        Write-Host "    -> Initializing fresh database files (this takes ~30s)..."
+        Ensure-Directory $DbDataDir
+        # Write my.ini into the fresh db-data dir before init
+        Set-Content -Path (Join-Path $DbDataDir "my.ini") -Value $MyIniContent -Force
+        # mysql_install_db bootstraps the system grant tables
+        & $MysqlInstallDb --datadir="$DbDataDir" --basedir="$MariaDbPath" --port=$DbPort 2>&1 | Out-Null
+        if (-not (Test-Path (Join-Path $DbDataDir "ibdata1")) -and -not (Test-Path (Join-Path $DbDataDir "mysql"))) {
+            Write-Host "[ERROR] Database initialization did not create expected files." -ForegroundColor Red
+            Write-Host "        Check write permissions or path quoting in $DbDataDir" -ForegroundColor Yellow
+            exit 1
+        }
+        Write-Host "    -> Database initialized." -ForegroundColor Cyan
+    } else {
+        Write-Host "    -> Existing database found, skipping init." -ForegroundColor Cyan
     }
-    Write-Host "    -> Database initialized." -ForegroundColor Cyan
-} else {
-    Write-Host "    -> Existing database found, skipping init." -ForegroundColor Cyan
-}
 
-# Start Database — pass --defaults-file explicitly so it reads our my.ini
-Write-Host "    -> Starting Database Server..."
-$MySqlArgs = @(
-    "--defaults-file=`"$MyIniPath`"",
-    "--datadir=`"$DbDataDir`"",
-    "--port=$($Config.DbPort)",
-    "--bind-address=127.0.0.1",
-    "--skip-name-resolve",
-    "--log-error=`"$($DbDataDir -replace '\\','/')/mariadb.err`""
-)
-$DbProcess = Start-Process -FilePath $Mysqld -ArgumentList $MySqlArgs -WindowStyle Hidden -PassThru
+    # Start Database — pass --defaults-file explicitly so it reads our my.ini
+    Write-Host "    -> Starting Database Server..."
+    $MySqlArgs = @(
+        "--defaults-file=`"$MyIniPath`"",
+        "--datadir=`"$DbDataDir`"",
+        "--port=$DbPort",
+        "--bind-address=$DbHost",
+        "--skip-name-resolve",
+        "--log-error=`"$($DbDataDir -replace '\\','/')/mariadb.err`""
+    )
+    $DbProcess = Start-Process -FilePath $Mysqld -ArgumentList $MySqlArgs -WindowStyle Hidden -PassThru
 
-# Wait for DB to become available — poll the error log for "ready for connections"
-$DbReady = $false
-$RetryCount = 0
-$ErrLog = Join-Path $DbDataDir "*.err"
-while (-not $DbReady -and $RetryCount -lt 30) {
-    Start-Sleep -Seconds 2
-    $RetryCount++
+    # Wait for DB to become available — poll the error log for "ready for connections"
+    $DbReady = $false
+    $RetryCount = 0
+    $ErrLog = Join-Path $DbDataDir "*.err"
+    while (-not $DbReady -and $RetryCount -lt 30) {
+        Start-Sleep -Seconds 2
+        $RetryCount++
 
-    # Primary check: try connecting via TCP
-    try {
-        $result = & $MysqlClient -u root -h 127.0.0.1 -P $($Config.DbPort) --connect-timeout=2 -e "SELECT 1;" 2>&1
-        if ($LASTEXITCODE -eq 0) { $DbReady = $true; break }
-    } catch { }
+        # Primary check: try connecting via TCP
+        try {
+            $result = & $MysqlClient -u $($Config.DbAdminUser) -p$($Config.DbAdminPass) -h $DbHost -P $DbPort --connect-timeout=2 -e "SELECT 1;" 2>&1
+            if ($LASTEXITCODE -eq 0) { $DbReady = $true; break }
+        } catch { }
 
-    # Secondary check: look for "ready for connections" in error log
-    $errFiles = Get-Item (Join-Path $DbDataDir "*.err") -ErrorAction SilentlyContinue
-    if ($errFiles) {
-        $lastLines = Get-Content $errFiles[-1].FullName -Tail 5 -ErrorAction SilentlyContinue
-        if ($lastLines -match "ready for connections") { 
-            Start-Sleep -Seconds 1  # brief pause after ready signal
-            $DbReady = $true; break 
+        # Secondary check: look for "ready for connections" in error log
+        $errFiles = Get-Item (Join-Path $DbDataDir "*.err") -ErrorAction SilentlyContinue
+        if ($errFiles) {
+            $lastLines = Get-Content $errFiles[-1].FullName -Tail 5 -ErrorAction SilentlyContinue
+            if ($lastLines -match "ready for connections") { 
+                Start-Sleep -Seconds 1  # brief pause after ready signal
+                $DbReady = $true; break 
+            }
+        }
+
+        if ($RetryCount % 5 -eq 0) {
+            Write-Host "    -> Still waiting for database... ($RetryCount/30)" -ForegroundColor Yellow
+        }
+
+        # If process died, bail early
+        if ($DbProcess.HasExited) {
+            Write-Host "[ERROR] mysqld.exe exited unexpectedly (code $($DbProcess.ExitCode))." -ForegroundColor Red
+            $errFiles = Get-Item (Join-Path $DbDataDir "*.err") -ErrorAction SilentlyContinue
+            if ($errFiles) {
+                Write-Host "--- Last 20 lines of error log ---" -ForegroundColor Yellow
+                Get-Content $errFiles[-1].FullName -Tail 20 | ForEach-Object { Write-Host $_ }
+            }
+            exit 1
         }
     }
 
-    if ($RetryCount % 5 -eq 0) {
-        Write-Host "    -> Still waiting for database... ($RetryCount/30)" -ForegroundColor Yellow
-    }
-
-    # If process died, bail early
-    if ($DbProcess.HasExited) {
-        Write-Host "[ERROR] mysqld.exe exited unexpectedly (code $($DbProcess.ExitCode))." -ForegroundColor Red
+    if (-not $DbReady) {
+        Write-Host "[ERROR] Database failed to start after 60s." -ForegroundColor Red
         $errFiles = Get-Item (Join-Path $DbDataDir "*.err") -ErrorAction SilentlyContinue
         if ($errFiles) {
             Write-Host "--- Last 20 lines of error log ---" -ForegroundColor Yellow
             Get-Content $errFiles[-1].FullName -Tail 20 | ForEach-Object { Write-Host $_ }
         }
+        if ($DbProcess -and -not $DbProcess.HasExited) { Stop-Process -Id $DbProcess.Id -Force }
         exit 1
     }
-}
 
-if (-not $DbReady) {
-    Write-Host "[ERROR] Database failed to start after 60s." -ForegroundColor Red
-    $errFiles = Get-Item (Join-Path $DbDataDir "*.err") -ErrorAction SilentlyContinue
-    if ($errFiles) {
-        Write-Host "--- Last 20 lines of error log ---" -ForegroundColor Yellow
-        Get-Content $errFiles[-1].FullName -Tail 20 | ForEach-Object { Write-Host $_ }
-    }
-    if ($DbProcess -and -not $DbProcess.HasExited) { Stop-Process -Id $DbProcess.Id -Force }
-    exit 1
+    Write-Host "[OK] Database is running." -ForegroundColor Green
 }
-
-Write-Host "[OK] Database is running." -ForegroundColor Green
 
 # Create schema and user (idempotent)
 Write-Host "    -> Verifying Schema and Credentials..."
@@ -299,10 +356,10 @@ CREATE USER IF NOT EXISTS '$($Config.DbUser)'@'localhost' IDENTIFIED BY '$($Conf
 GRANT ALL PRIVILEGES ON *.* TO '$($Config.DbUser)'@'localhost';
 FLUSH PRIVILEGES;
 "@
-$SqlSetup | & $MysqlClient -u root -h 127.0.0.1 -P $($Config.DbPort) 2>&1 | Out-Null
+$SqlSetup | & $MysqlClient -u $($Config.DbAdminUser) -p$($Config.DbAdminPass) -h $DbHost -P $DbPort 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Database initialization failed!" -ForegroundColor Red
-    Stop-Process -Id $DbProcess.Id -Force
+    if ($DbProcess -and -not $DbProcess.HasExited) { Stop-Process -Id $DbProcess.Id -Force }
     exit 1
 }
 
@@ -313,13 +370,13 @@ function Test-CoreTables {
         [string]$DatabaseName
     )
 
-    $Tables = & $MysqlClientPath -u root -h 127.0.0.1 -P $Port -D $DatabaseName -N -B -e "SELECT table_name FROM information_schema.tables WHERE table_schema = '$DatabaseName' AND table_name IN ('account', 'category', 'product');"
+    $Tables = & $MysqlClientPath -u $($Config.DbAdminUser) -p$($Config.DbAdminPass) -h $DbHost -P $Port -D $DatabaseName -N -B -e "SELECT table_name FROM information_schema.tables WHERE table_schema = '$DatabaseName' AND table_name IN ('account', 'category', 'product');"
     return ($LASTEXITCODE -eq 0 -and $Tables -match 'account' -and $Tables -match 'category' -and $Tables -match 'product')
 }
 
 # Fix collation in the dump file BEFORE importing - MariaDB doesn't support utf8mb4_0900_ai_ci
 $DumpFile = Join-Path $ScriptDir "Dump20210903.sql"
-if (Test-Path $DumpFile) {
+if ((-not $Config.UseSystemMySql) -and (Test-Path $DumpFile)) {
     if ((Select-String -Path $DumpFile -Pattern "utf8mb4_0900_ai_ci" -Quiet) -eq $true) {
         Write-Host "    -> Fixing SQL collation compatibility (one-time)..."
         (Get-Content $DumpFile) -replace 'utf8mb4_0900_ai_ci', 'utf8mb4_unicode_ci' | Set-Content $DumpFile
@@ -335,7 +392,7 @@ if (-not (Test-Path $DumpFile)) {
 } else {
     try {
         # Use cmd /c with input redirection - most reliable way to pipe a file to mysql on Windows
-        $importArgs = "-u root -h 127.0.0.1 -P $($Config.DbPort) -D `"$($Config.DbName)`""
+        $importArgs = "-u $($Config.DbAdminUser) -p$($Config.DbAdminPass) -h $DbHost -P $DbPort -D `"$($Config.DbName)`""
         cmd /c "`"$MysqlClient`" $importArgs < `"$DumpFile`"" 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Some SQL statements failed during import, but continuing..."
@@ -356,7 +413,7 @@ if (-not (Test-CoreTables -MysqlClientPath $MysqlClient -Port $Config.DbPort -Da
 # Add missing product_image_url column if it doesn't exist
 Write-Host "    -> Ensuring schema is up-to-date..."
 $AlterTableSql = "ALTER TABLE product ADD COLUMN IF NOT EXISTS product_image_url varchar(1000) DEFAULT NULL;"
-$AlterTableSql | & $MysqlClient -u $($Config.DbUser) -p$($Config.DbPass) -h 127.0.0.1 -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
+$AlterTableSql | & $MysqlClient -u $($Config.DbUser) -p$($Config.DbPass) -h $DbHost -P $DbPort $($Config.DbName) 2>&1 | Out-Null
 
 # Add order coupon tracking columns and contact_messages table if they do not exist.
 $OrderSchemaSql = @'
@@ -373,7 +430,7 @@ CREATE TABLE IF NOT EXISTS contact_messages (
     submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 '@
-$OrderSchemaSql | & $MysqlClient -u root -h 127.0.0.1 -P $($Config.DbPort) $($Config.DbName) 2>&1 | Out-Null
+$OrderSchemaSql | & $MysqlClient -u $($Config.DbAdminUser) -p$($Config.DbAdminPass) -h $DbHost -P $DbPort $($Config.DbName) 2>&1 | Out-Null
 
 # -----------------------------------------------------------------------------
 # 3. Build the Application
@@ -383,7 +440,7 @@ Set-Location $ScriptDir
 & $MvnBin clean package -DskipTests
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] Maven build failed!" -ForegroundColor Red
-    Stop-Process -Id $DbProcess.Id -Force
+    if ($DbProcess -and -not $DbProcess.HasExited) { Stop-Process -Id $DbProcess.Id -Force }
     exit 1
 }
 Write-Host "[OK] Build successful." -ForegroundColor Green
